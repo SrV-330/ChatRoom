@@ -9,6 +9,7 @@ import java.util.Queue;
 import java.util.Stack;
 
 import chat.server.util.json.exception.JsonParserException;
+import chat.server.util.json.exception.JsonUnsupportClassException;
 
 public class JsonParser<T> {
 	protected static final HashMap<String,Class<?>> classMap=new HashMap<>();
@@ -165,33 +166,53 @@ public class JsonParser<T> {
 		
 	}
 	
-	private StringBuilder sbJson=new StringBuilder("{");
+	
 	public String parseToJson(Object o) throws Exception{
-		
+		StringBuilder sbJson=new StringBuilder("{");
 		Class<?> clazz=o.getClass();
 		Field[] fields=clazz.getDeclaredFields();
-		
+		List<String> ls=new ArrayList<String>();
+		List<String> ls1=new ArrayList<String>();
+		List<String> ls2=new ArrayList<String>();
 		for(Field field:fields){
+			field.setAccessible(true);
 			Class<?> fieldClazz=field.getType();
 			if(fieldClazz==Integer.class||fieldClazz==Long.class||
 					fieldClazz==Short.class||fieldClazz==Boolean.class||
 					fieldClazz==Byte.class||fieldClazz==Double.class||
 					fieldClazz==Float.class||fieldClazz==Character.class||
 					fieldClazz==String.class){
-				sbJson.append("\""+field.getName()+"\":\""+field.get(o)+"\",");
+				ls.add("\""+field.getName()+"\":\""+field.get(o)+"\"");
 				
 			}else if(fieldClazz==List.class){
 				List<Object> l=(List<Object>)field.get(o);
-				sbJson.append("[");
-				for(Object o1:l){
-					parseToJson(o1);
-				}
-				sbJson.append("]");
-			}else if(fieldClazz==List.class){
 				
+				sbJson.append("\""+field.getName()+"\":[");
+				for(Object o1:l){
+					ls1.add(parseToJson(o1));
+				}
+				sbJson.append(String.join(",", ls1));
+				sbJson.append("]");
+			}else if(fieldClazz==Object.class){
+				ls2.add("\""+field.getName()+"\":"+parseToJson(sbJson));
+			}else{
+				throw new JsonUnsupportClassException("json unsupport the class:"+fieldClazz);
 			}
+			
 		}
-		
+		if(!ls.isEmpty()){
+			sbJson.append(String.join(",", ls));
+		}
+		if(!ls.isEmpty()&&!ls1.isEmpty()){
+			sbJson.append(",");
+		}
+		if(!ls1.isEmpty()){
+			sbJson.append(String.join(",", ls1));
+		}
+		if((!ls.isEmpty()^!ls1.isEmpty())&&!ls2.isEmpty()){
+			sbJson.append(",");
+		}
+		sbJson.append(String.join(",", ls2));
 		
 		return sbJson.append("}").toString();
 	}
