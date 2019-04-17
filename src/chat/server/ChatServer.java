@@ -3,7 +3,6 @@ package chat.server;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -13,7 +12,9 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import chat.server.entity.Command;
+import chat.server.entity.LoginInfo;
 import chat.server.entity.UserGroupInfo;
+import chat.server.entity.UserGroupModifyInfo;
 import chat.server.entity.UserInfo;
 import chat.server.util.DBHelper;
 
@@ -124,9 +125,9 @@ public class ChatServer {
 
 		@Override
 		public void run() {
-			
+			ObjectInputStream ois=null;
 			try {
-				ObjectInputStream ois=new ObjectInputStream(in);
+				ois=new ObjectInputStream(in);
 				
 				Command cmd=(Command)ois.readObject();
 				switch (cmd.getCmd()) {
@@ -138,21 +139,83 @@ public class ChatServer {
 					break;
 				case Command.REMOVE_GROUP:
 					doDeleteGroup(cmd);
+					break;
+				case Command.MODIFY_GROUP_NAME:
+					doModifyGroupName(cmd);
+					break;
+				case Command.MOVE_TO_GROUP:
+					doMoveToGroup(cmd);
+					break;
 				default:
 					break;
 				}
-			} catch (ClassNotFoundException e) {
-				// TODO Auto-generated catch block
+			} catch (Exception e) {
 				e.printStackTrace();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				try {
+					out.write(Command.FAIL);
+				} catch (IOException e1) {
+					
+					e1.printStackTrace();
+				}
+			}finally{
+				try {
+					if(ois!=null) ois.close();
+					
+					if(out!=null) out.close();
+					
+					if(in!=null) in.close();
+				} catch (IOException e) {
+				
+					e.printStackTrace();
+				}
 			}
 			
 			
 		}
-		private void doDeleteGroup(Command cmd) {
+		private void doMoveToGroup(Command cmd) throws IOException {
+			if(cmd instanceof UserGroupModifyInfo){
+				UserGroupModifyInfo ugmi=(UserGroupModifyInfo)cmd;
+				if(ugmi.getSrc().getGroupName().equals(ugmi.getTar().getGroupName()))
+					out.write(UserGroupInfo.GROUP_REPEATE);
+				if(DBHelper.modifyGroupName(ugmi.getSrc(), ugmi.getTar())){
+					out.write(Command.SUCCESS);
+				}
+				
+			}
+			out.write(Command.FAIL);
 			
+		}
+
+
+
+
+
+		private void doModifyGroupName(Command cmd) throws IOException {
+			if(cmd instanceof UserGroupModifyInfo){
+				UserGroupModifyInfo ugmi=(UserGroupModifyInfo)cmd;
+				if(ugmi.getSrc().getGroupName().equals(ugmi.getTar().getGroupName()))
+					out.write(UserGroupInfo.GROUP_REPEATE);
+				if(DBHelper.modifyGroupName(ugmi.getSrc(), ugmi.getTar())){
+					out.write(Command.SUCCESS);
+				}
+				
+			}
+			out.write(Command.FAIL);
+			
+		}
+
+
+
+
+
+		private void doDeleteGroup(Command cmd) throws IOException {
+			if(cmd instanceof UserGroupInfo){
+				UserGroupInfo userGroupInfo=(UserGroupInfo)cmd;
+				if(DBHelper.deleteUserGroup(userGroupInfo)){
+					out.write(Command.SUCCESS);
+				}
+			}
+			out.write(Command.FAIL);
 			
 			
 		}
@@ -205,6 +268,8 @@ public class ChatServer {
 		}
 		
 	}
+	
+	
 	
 	
 	

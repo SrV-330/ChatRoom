@@ -1,32 +1,52 @@
 package chat.server.util.json;
 
+import java.io.File;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.Stack;
 
+import chat.server.entity.LoginInfo;
+import chat.server.util.json.annotation.JsonBody;
 import chat.server.util.json.exception.JsonParserException;
 import chat.server.util.json.exception.JsonUnsupportClassException;
 
-public class JsonParser<T> {
-	protected static final HashMap<String,Class<?>> classMap=new HashMap<>();
+public class JsonParser {
+	
+	private List<Class<?>> classes=new ArrayList<>();
+	private List<String> classesName=new ArrayList<>();
 	protected Queue<Character> jsonQueue=new LinkedList<>();
 	protected Stack<Object> stack=new Stack<>();
 	protected Object target;
-	public JsonParser(){}
-	public JsonParser(String jsonBody,Object target){
-		for(int i=0;i<jsonBody.length();i++){
-			jsonQueue.offer(jsonBody.charAt(i));
-		}
+	public JsonParser() throws ClassNotFoundException{
 		
+		
+		parserAnnotation("");
+	}
+	public JsonParser(String jsonBody,Object target) throws ClassNotFoundException{
+		this();
+		Character c=null;
+		for(int i=0;i<jsonBody.length();i++){
+			c=jsonBody.charAt(i);
+			
+			jsonQueue.offer(c);
+			
+		}
+		removeSpace();
 		this.target=target;
 	}
 	
-	public T parser() throws Exception{
-		return (T)doParser();
+	public Object parser(String jsonBody,Object target) throws Exception{
+		jsonQueue.clear();
+		for(int i=0;i<jsonBody.length();i++){
+			jsonQueue.offer(jsonBody.charAt(i));
+		}
+		removeSpace();
+		this.target=target;
+		return doParser();
 		
 		
 	}
@@ -35,55 +55,42 @@ public class JsonParser<T> {
 		if(jsonQueue.isEmpty()) return null;
 		int c=jsonQueue.peek();
 		if(c!='{') throw new JsonParserException("json must start with symbol \'{\' ");
-		
-		
+		c=jsonQueue.poll();
+		stack.push((char)c);
+		stack.push(target);
 		return parserObject(target);
+	}
+	private void removeSpace(){
+		while(jsonQueue.peek()<=20){
+			jsonQueue.poll();
+		}
 	}
 	private Object parserObject(Object tar) throws Exception{
 		int c=-1;
 		
-		while(!jsonQueue.isEmpty()&&(c=jsonQueue.poll())!='}'){
+		while(!jsonQueue.isEmpty()){
+			c=jsonQueue.poll();
 			if(c=='{'){
+				stack.push((char)c);
+				if(tar instanceof ArrayList) continue;
+				stack.push(tar);
 				
-				
-				Object o=null;
-				if(!stack.isEmpty()&&(o=stack.peek())!=null){
-					if(o instanceof String) {
-						o=stack.pop();
-						String objectName=(String)o;
-						Class<?> clazz=tar.getClass();
-						Field field=clazz.getDeclaredField(objectName);
-						field.setAccessible(true);
-						Object tarField=field.get(tar);
-						clazz=tarField.getClass();
-						tarField=clazz.newInstance();
-						field.set(tar, parserObject(tarField));
-						
-						stack.push(tar);
-						continue;
-					}
-					
-				}
-				stack.push(c);
-				
+			
 			}else if(c=='['){
-				stack.push(c);
-				stack.push(parserArray(tar));
-				
+				stack.push((char)c);
+				stack.push((List<Object>)tar);
 			}else if(c==':'){
 				
-				while((c=jsonQueue.peek())<=20){
-					jsonQueue.poll();
-				}
-				
+				removeSpace();
+				c=jsonQueue.peek();
 				if(c=='"'){
-					stack.push(parserField(tar));
+					parserField();
 				}else if(c=='{'){
-					stack.push(parserObject(tar));
+					parserField();
 				}else if(c=='['){
-					stack.push(parserObject(tar));
+					parserField();
 				}else{
-				
+					
 					throw new JsonParserException("there must be symbol \'{\',\'[\' or \'\"\' after \':\'");
 				}
 			}else if(c<=20){
@@ -91,64 +98,152 @@ public class JsonParser<T> {
 			}else if(c=='"'){
 				stack.push(parserString());			
 			}else if(c==','){
-				while((c=jsonQueue.peek())<=20){
-					jsonQueue.poll();
+				removeSpace();
+			}else if(c==']'){
+				List<Object> l=(List<Object>) stack.pop();
+				
+				c=(char)stack.pop();
+				
+				if(c=='[')
+					return l;
+			}else if(c=='}'){
+				
+				Object o=stack.pop();
+				
+				c=(char)stack.pop();
+				
+				if(c=='{'){
+					if(stack.isEmpty()) return o;
+					else{
+						
+						
+						Object l=null ;
+						if((l=stack.peek()) instanceof ArrayList){
+							((List<Object>)l).add(o);
+							continue;
+						}else{
+							return o;
+						}
+					}
 				}
+				
+				
+				throw new JsonParserException("json must end with symbol \'}\' ");
+				
 			}else{
 				throw new JsonParserException("can not parser char \'"+c+"\'");
 			}
 		}
 		
-		if(c=='}'){
-			if(stack.size()>=2){
-				return stack.pop();
-			}else{
-				return null;
-			}
-		}else{
-			throw new JsonParserException("json must end with symbol \'}\' ");
-		}
-			
-		
+		throw new JsonParserException("json must end with symbol \'}\' ");
+
 	}
 
-	protected Object parserField(Object tar) throws Exception{
-		Object o=stack.pop();
-		String fieldName="";
-		if(!(o instanceof String)) throw new JsonParserException("can not cast class "+o+" to String");
-		
-		fieldName=(String)o;
-		Class<?> clazz= tar.getClass();
-		
-		Field field=clazz.getDeclaredField(fieldName);
-		field.setAccessible(true);
-		if(jsonQueue.poll()=='"')
-		field.set(tar, parserString());
-		return tar;
-		
-		
-	}
-	protected Object[] parserArray(Object tar) throws Exception {
-		
+	private void parserField() throws Exception{
 		int c=-1;
-		List<Object> l=new ArrayList<>();
-		while((c=jsonQueue.poll())!=']'){
-			l.add(parserObject(tar));
-		}
+		c=jsonQueue.peek();
+		if(c=='"'){
+			jsonQueue.poll();
+			Object o=stack.pop();
+			String fieldName="";
+			if(!(o instanceof String)) throw new JsonParserException("can not cast class "+o+" to String");
+			
+			fieldName=(String)o;
+			
+			Object tar=stack.peek();
+			
+			if(tar==null){
+				System.out.println(fieldName);
+				tar=findClassByField(fieldName);
+			}else if((tar.getClass() ==char.class||tar.getClass() ==Character.class)
+					&&((Character)tar=='{')){
 				
-		
-		
-		
-		return l.toArray();
-		
-		
-	}
+				tar=findClassByField(fieldName);
+				
+				stack.push(tar);
+			}
+			if(tar==null)throw new JsonParserException("parsered class must have annottation @JsonBody");
+			
+			
+			Class<?> clazz= tar.getClass();
+			
+			Field field=clazz.getDeclaredField(fieldName);
+			field.setAccessible(true);
+			Class<?> fieldClass=field.getType();
+			
+			if(fieldClass==Long.TYPE||fieldClass==long.class){
+				field.set(tar,Long.parseLong(parserString()));
+			}else if(fieldClass==Integer.TYPE||fieldClass==int.class){
+				field.set(tar,Integer.parseInt(parserString()));
+			}else if(fieldClass==Short.TYPE||fieldClass==short.class){
+				field.set(tar,Short.parseShort(parserString()));
+			}else if(fieldClass==Byte.TYPE||fieldClass==byte.class){
+				field.set(tar,(byte)Short.parseShort(parserString()));
+			}else if(fieldClass==Boolean.TYPE||fieldClass==boolean.class){
+				field.set(tar,Boolean.parseBoolean(parserString()));
+			}else if(fieldClass==Double.TYPE||fieldClass==double.class){
+				field.set(tar,Double.parseDouble(parserString()));
+			}else if(fieldClass==Float.TYPE||fieldClass==float.class){
+				field.set(tar,Float.parseFloat(parserString()));
+			}else{
+				field.set(tar, parserString());
+			}
+			
+		}else if(c=='{'){
+			Object o=stack.pop();
+			String fieldName="";
+			if(!(o instanceof String)) throw new JsonParserException("can not cast class "+o+" to String");
+			
+			fieldName=(String)o;
+			
+			Object tar=stack.peek();
+			Class<?> clazz= tar.getClass();
+			
+			Field field=clazz.getDeclaredField(fieldName);
+			field.setAccessible(true);
+			
+			field.set(tar, parserObject(field.get(tar)));
+		}else if(c=='['){
+			
+			Object o=stack.pop();
+			String fieldName="";
+			if(!(o instanceof String)) throw new JsonParserException("can not cast class "+o+" to String");
+			fieldName=(String)o;
+			Object tar=stack.peek();
+			Class<?> clazz= tar.getClass();
+			
+			Field field=clazz.getDeclaredField(fieldName);
+			field.setAccessible(true);
+			
+			List<Object> list=(List<Object>)field.get(tar);
+			list=ArrayList.class.newInstance();
 
-	protected static Class<?> getJsonClass(String className){
+			
+			field.set(tar, parserObject(list));
+			
+		}else {
+			throw new JsonParserException("there must be symbol \'{\',\'[\' or \'\"\' after \':\'");
+		}
 		
-		return classMap.get(className);
+		
+		
 	}
-	protected String parserString() {
+	private Object findClassByField(String fieldName){
+		
+		Object o=null;
+		for(Class clazz:classes){
+			
+			try {
+				clazz.getDeclaredField(fieldName);
+				o=clazz.newInstance();
+				return o;
+			} catch (Exception e) {
+				continue;
+			}
+		}
+		return null;
+	}
+	private String parserString() {
 		
 		Character c=0;
 		StringBuilder sb=new StringBuilder("");
@@ -168,12 +263,15 @@ public class JsonParser<T> {
 	
 	
 	public String parseToJson(Object o) throws Exception{
+		
 		StringBuilder sbJson=new StringBuilder("{");
+		
 		Class<?> clazz=o.getClass();
 		Field[] fields=clazz.getDeclaredFields();
 		List<String> ls=new ArrayList<String>();
 		List<String> ls1=new ArrayList<String>();
 		List<String> ls2=new ArrayList<String>();
+		List<String> ls3=new ArrayList<>();
 		for(Field field:fields){
 			field.setAccessible(true);
 			Class<?> fieldClazz=field.getType();
@@ -184,17 +282,22 @@ public class JsonParser<T> {
 					fieldClazz==String.class){
 				ls.add("\""+field.getName()+"\":\""+field.get(o)+"\"");
 				
+			}else if(fieldClazz.isPrimitive()){
+				ls.add("\""+field.getName()+"\":\""+field.get(o)+"\"");
+				
 			}else if(fieldClazz==List.class){
 				List<Object> l=(List<Object>)field.get(o);
-				
-				sbJson.append("\""+field.getName()+"\":[");
+				StringBuilder s=new StringBuilder();
+				s.append("\""+field.getName()+"\":[");
 				for(Object o1:l){
+					
 					ls1.add(parseToJson(o1));
 				}
-				sbJson.append(String.join(",", ls1));
-				sbJson.append("]");
-			}else if(fieldClazz==Object.class){
-				ls2.add("\""+field.getName()+"\":"+parseToJson(sbJson));
+				s.append(String.join(",", ls1));
+				s.append("]");
+				ls3.add(s.toString());
+			}else if(classesName.contains(fieldClazz.getName())){
+				ls2.add("\""+field.getName()+"\":"+parseToJson(field.get(o)));
 			}else{
 				throw new JsonUnsupportClassException("json unsupport the class:"+fieldClazz);
 			}
@@ -203,18 +306,93 @@ public class JsonParser<T> {
 		if(!ls.isEmpty()){
 			sbJson.append(String.join(",", ls));
 		}
-		if(!ls.isEmpty()&&!ls1.isEmpty()){
+		if(!ls.isEmpty()&&!ls3.isEmpty()){
 			sbJson.append(",");
 		}
-		if(!ls1.isEmpty()){
-			sbJson.append(String.join(",", ls1));
+		if(!ls3.isEmpty()){
+			sbJson.append(String.join(",", ls3));
 		}
-		if((!ls.isEmpty()^!ls1.isEmpty())&&!ls2.isEmpty()){
+		if((!ls.isEmpty()||!ls3.isEmpty())&&!ls2.isEmpty()){
 			sbJson.append(",");
 		}
 		sbJson.append(String.join(",", ls2));
 		
+		
+
 		return sbJson.append("}").toString();
+	}
+	
+	
+	
+	private void parserAnnotation(String path) throws ClassNotFoundException{
+		
+		List<String> classList=new ArrayList<>();
+		obtainClassNames("src/"+path.replace(".", "/"), classList);
+		
+		for(String s:classList){
+			
+			Class<?> clazz=Class.forName(s.replace("src/", ""));
+			if(clazz.isAnnotationPresent(JsonBody.class)){
+				classes.add(clazz);
+				classesName.add(clazz.getName());
+			}
+		}
+		
+	}
+	private void obtainClassNames(String path,List<String> classList){
+		File root=new File(path);
+		File[] files=root.listFiles();
+		
+		for(File file:files){
+			if(file.isFile()){
+				String s=(path+"/"+file.getName()).replace(".java","")
+						.replace("src/", "")
+						.replace("/", ".");
+				
+				if(s.startsWith(".")) s=s.substring(s.indexOf(".")+1);
+				classList.add(s);
+				
+				
+				
+			}else{
+				obtainClassNames(path+"/"+file.getName(), classList);
+			}
+		}
+		
+		
+		
+		
+	}
+	public static void main(String[] args) throws Exception {
+		
+		/**
+		 * test
+		 */
+		JsonParser jp=new JsonParser();
+		Birth birth=new Birth("1997","07","27");
+		User user=new User("SrV-330",22,birth);
+		System.out.println(user);
+		String s= jp.parseToJson(user);
+		System.out.println(s);
+		User u1=new User();
+		Birth b1=new Birth();
+		System.out.println(jp.parser(s,u1));
+		
+//		LoginInfo loginInfo=new LoginInfo();
+//		
+//		Class<?> clazz=loginInfo.getClass();
+//		Method m=clazz.getMethod("setCmd",Integer.class );
+//		m.invoke(loginInfo, 2);
+//		System.out.println(loginInfo.getCmd());
+//		String s="cmd";
+//		s="set"+Character.toString(Character.toUpperCase(s.charAt(0)))+s.substring(1);
+//		System.out.println(s);
+		
+		
+		
+		
+		
+		
 	}
 	
 

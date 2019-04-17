@@ -2,6 +2,7 @@ package chat.server.util;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -11,6 +12,8 @@ import java.util.Map.Entry;
 import chat.server.entity.FriendInfo;
 import chat.server.entity.UserGroupInfo;
 import chat.server.entity.UserInfo;
+import chat.server.util.json.JsonParser;
+import chat.server.util.json.annotation.JsonBody;
 
 public class DBHelper {
 	
@@ -295,6 +298,7 @@ public class DBHelper {
 		
 		
 	}
+	
 	
 	
 	

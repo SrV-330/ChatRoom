@@ -1,7 +1,4 @@
-package chat.server;
-
-import chat.server.entity.Command;
-import chat.server.entity.UserInfo;
+package chat.server.entity;
 
 public class LoginInfo extends Command{
 	
@@ -9,6 +6,9 @@ public class LoginInfo extends Command{
 	
 	public static final int LOGIN_NO_THE_USER=103;
 	
+	public LoginInfo() {
+		super();
+	}
 	public LoginInfo(Integer cmd, UserInfo userInfo){
 		super(cmd);
 		
