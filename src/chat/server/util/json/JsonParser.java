@@ -3,6 +3,7 @@ package chat.server.util.json;
 import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -11,6 +12,8 @@ import java.util.Stack;
 
 import chat.server.entity.LoginInfo;
 import chat.server.util.json.annotation.JsonBody;
+import chat.server.util.json.annotation.JsonGetter;
+import chat.server.util.json.annotation.JsonSetter;
 import chat.server.util.json.exception.JsonParserException;
 import chat.server.util.json.exception.JsonUnsupportClassException;
 
@@ -73,6 +76,7 @@ public class JsonParser {
 			if(c=='{'){
 				stack.push((char)c);
 				if(tar instanceof ArrayList) continue;
+				
 				stack.push(tar);
 				
 			
@@ -153,7 +157,7 @@ public class JsonParser {
 			Object tar=stack.peek();
 			
 			if(tar==null){
-				System.out.println(fieldName);
+				System.out.println("null:"+fieldName);
 				tar=findClassByField(fieldName);
 			}else if((tar.getClass() ==char.class||tar.getClass() ==Character.class)
 					&&((Character)tar=='{')){
@@ -167,23 +171,24 @@ public class JsonParser {
 			
 			Class<?> clazz= tar.getClass();
 			
-			Field field=clazz.getDeclaredField(fieldName);
-			field.setAccessible(true);
+			Field field=getField(fieldName, clazz,JsonSetter.class);//clazz.getDeclaredField(fieldName);
+			//field.setAccessible(true);
+			//System.out.println(fieldName);
 			Class<?> fieldClass=field.getType();
 			
-			if(fieldClass==Long.TYPE||fieldClass==long.class){
+			if(fieldClass==Long.class||fieldClass==long.class){
 				field.set(tar,Long.parseLong(parserString()));
-			}else if(fieldClass==Integer.TYPE||fieldClass==int.class){
+			}else if(fieldClass==Integer.class||fieldClass==int.class){
 				field.set(tar,Integer.parseInt(parserString()));
-			}else if(fieldClass==Short.TYPE||fieldClass==short.class){
+			}else if(fieldClass==Short.class||fieldClass==short.class){
 				field.set(tar,Short.parseShort(parserString()));
-			}else if(fieldClass==Byte.TYPE||fieldClass==byte.class){
+			}else if(fieldClass==Byte.class||fieldClass==byte.class){
 				field.set(tar,(byte)Short.parseShort(parserString()));
-			}else if(fieldClass==Boolean.TYPE||fieldClass==boolean.class){
+			}else if(fieldClass==Boolean.class||fieldClass==boolean.class){
 				field.set(tar,Boolean.parseBoolean(parserString()));
-			}else if(fieldClass==Double.TYPE||fieldClass==double.class){
+			}else if(fieldClass==Double.class||fieldClass==double.class){
 				field.set(tar,Double.parseDouble(parserString()));
-			}else if(fieldClass==Float.TYPE||fieldClass==float.class){
+			}else if(fieldClass==Float.class||fieldClass==float.class){
 				field.set(tar,Float.parseFloat(parserString()));
 			}else{
 				field.set(tar, parserString());
@@ -199,8 +204,8 @@ public class JsonParser {
 			Object tar=stack.peek();
 			Class<?> clazz= tar.getClass();
 			
-			Field field=clazz.getDeclaredField(fieldName);
-			field.setAccessible(true);
+			Field field=getField(fieldName, clazz,JsonSetter.class);//clazz.getDeclaredField(fieldName);
+			//field.setAccessible(true);
 			
 			field.set(tar, parserObject(field.get(tar)));
 		}else if(c=='['){
@@ -212,8 +217,8 @@ public class JsonParser {
 			Object tar=stack.peek();
 			Class<?> clazz= tar.getClass();
 			
-			Field field=clazz.getDeclaredField(fieldName);
-			field.setAccessible(true);
+			Field field=getField(fieldName, clazz,JsonSetter.class);//clazz.getDeclaredField(fieldName);
+			//field.setAccessible(true);
 			
 			List<Object> list=(List<Object>)field.get(tar);
 			list=ArrayList.class.newInstance();
@@ -232,7 +237,7 @@ public class JsonParser {
 		
 		Object o=null;
 		for(Class clazz:classes){
-			
+			System.out.println(clazz.getName());
 			try {
 				clazz.getDeclaredField(fieldName);
 				o=clazz.newInstance();
@@ -261,17 +266,54 @@ public class JsonParser {
 		
 	}
 	
+	private Field getField(String fieldName,Class clazz,Class gs){
+		
+		Field f=null;
+		if(clazz==Object.class) return null;
+		try{
+			f= clazz.getDeclaredField(fieldName);
+			f.setAccessible(true);
+			
+			if(clazz.isAnnotationPresent(JsonBody.class)||f.isAnnotationPresent(gs)){
+				if((f.getModifiers()&Modifier.STATIC)!=Modifier.STATIC){
+					return f;
+				}
+			}
+			return null;
+			
+		}catch(Exception e){
+			clazz=clazz.getSuperclass();
+			return getField(fieldName,clazz,gs);
+		}
+		
+	}
+	private void getFields(Class clazz,List<Field> fieldList,Class gs){
+		if(clazz==Object.class) return;
+		Field[] fields=clazz.getDeclaredFields();
+		for(Field field:fields){
+			if(clazz.isAnnotationPresent(JsonBody.class)||field.isAnnotationPresent(gs)){
+				if((field.getModifiers()&Modifier.STATIC)!=Modifier.STATIC){
+					fieldList.add(field);
+				}
+			}
+		}
+		getFields(clazz.getSuperclass(), fieldList,gs);
+		
+	}
 	
 	public String parseToJson(Object o) throws Exception{
 		
 		StringBuilder sbJson=new StringBuilder("{");
 		
 		Class<?> clazz=o.getClass();
-		Field[] fields=clazz.getDeclaredFields();
+		//Field[] fields=clazz.getDeclaredFields();
+		List<Field> fields=new ArrayList<>();
+		getFields(clazz, fields,JsonGetter.class);
 		List<String> ls=new ArrayList<String>();
 		List<String> ls1=new ArrayList<String>();
 		List<String> ls2=new ArrayList<String>();
 		List<String> ls3=new ArrayList<>();
+		
 		for(Field field:fields){
 			field.setAccessible(true);
 			Class<?> fieldClazz=field.getType();
@@ -371,12 +413,14 @@ public class JsonParser {
 		JsonParser jp=new JsonParser();
 		Birth birth=new Birth("1997","07","27");
 		User user=new User("SrV-330",22,birth);
+		user.setCmd(101);
 		System.out.println(user);
 		String s= jp.parseToJson(user);
 		System.out.println(s);
 		User u1=new User();
 		Birth b1=new Birth();
 		System.out.println(jp.parser(s,u1));
+		System.out.println(u1.getCmd());
 		
 //		LoginInfo loginInfo=new LoginInfo();
 //		

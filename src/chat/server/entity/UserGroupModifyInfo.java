@@ -1,30 +1,31 @@
 package chat.server.entity;
 
-public class UserGroupModifyInfo extends Command {
+import java.io.Serializable;
+
+import chat.server.util.json.annotation.JsonBody;
+
+@JsonBody
+public class UserGroupModifyInfo extends Command implements Serializable{
 	
-	private UserGroupInfo src;
-	private UserGroupInfo tar;
-	
-	
-	
-	
-	public UserGroupModifyInfo() {
-	}
-	public UserGroupModifyInfo(UserGroupInfo src, UserGroupInfo tar) {
-		this.src = src;
-		this.tar = tar;
-	}
-	public UserGroupInfo getSrc() {
+	private String src;
+	private String tar;
+	public String getSrc() {
 		return src;
 	}
-	public void setSrc(UserGroupInfo src) {
+	public void setSrc(String src) {
 		this.src = src;
 	}
-	public UserGroupInfo getTar() {
+	public String getTar() {
 		return tar;
 	}
-	public void setTar(UserGroupInfo tar) {
+	public void setTar(String tar) {
 		this.tar = tar;
+	}
+	public UserGroupModifyInfo(String src, String tar) {
+		this.src = src;
+		this.tar = tar;
+	}
+	public UserGroupModifyInfo() {
 	}
 	@Override
 	public String toString() {
@@ -59,6 +60,11 @@ public class UserGroupModifyInfo extends Command {
 			return false;
 		return true;
 	}
+	
+	
+	
+	
+	
 	
 
 }

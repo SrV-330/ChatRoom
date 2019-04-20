@@ -1,13 +1,18 @@
 package chat.server.entity;
 
-public class UserInfo {
+import java.io.Serializable;
+
+import chat.server.util.json.annotation.JsonBody;
+
+@JsonBody
+public class UserInfo extends Command implements Serializable{
 	
 	private String userName;
 	private String userPwd;
 	
+	public static final int NO_THE_USER=103;
 	
-	
-	
+	public UserInfo(){}
 	
 	public UserInfo(String userName, String userPwd) {
 		this.userName = userName;
