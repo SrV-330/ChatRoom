@@ -14,6 +14,11 @@ public class UserInfo extends Command implements Serializable{
 	
 	public UserInfo(){}
 	
+	
+	public UserInfo(String userName) {
+		this.userName = userName;
+		
+	}
 	public UserInfo(String userName, String userPwd) {
 		this.userName = userName;
 		this.userPwd = userPwd;

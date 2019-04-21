@@ -17,7 +17,12 @@ public class FriendInfo extends Command implements Serializable{
 	public FriendInfo() {
 		super();
 	}
-	
+	public FriendInfo(String userName, String friendName) {
+		super();
+		this.userName = userName;
+		this.friendName = friendName;
+		
+	}
 	public FriendInfo(String userName, String friendName, String groupName) {
 		super();
 		this.userName = userName;

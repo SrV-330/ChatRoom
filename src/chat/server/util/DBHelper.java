@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import com.sun.org.apache.xalan.internal.xsltc.compiler.sym;
+
 import chat.server.entity.FriendInfo;
 import chat.server.entity.UserGroupInfo;
 import chat.server.entity.UserInfo;
@@ -14,7 +16,7 @@ import chat.server.entity.UserInfo;
 public class DBHelper {
 	
 
-	public static UserInfo getUser(String userName){
+	public synchronized static UserInfo getUser(String userName){
 		
 		try (RandomAccessFile raf=new RandomAccessFile("user.dat", "rw")){
 			int size=32*2;
@@ -40,7 +42,7 @@ public class DBHelper {
 		
 	}
 	
-	public static boolean addUser(UserInfo userInfo){
+	public synchronized static boolean addUser(UserInfo userInfo){
 		
 		try(RandomAccessFile raf=new RandomAccessFile("user.dat", "rw");) {
 			raf.seek(raf.length());
@@ -58,7 +60,7 @@ public class DBHelper {
 		}
 	}
 	
-	public static FriendInfo getFriend(FriendInfo friendInfo){
+	public synchronized static FriendInfo getFriend(FriendInfo friendInfo){
 		final int size=32*3;
 		final int nameOffset=0;
 		final int friendOffset=32*2;
@@ -101,7 +103,7 @@ public class DBHelper {
 		
 	}
 	
-	public static List<UserGroupInfo> getGroups(String userName){
+	public synchronized static List<UserGroupInfo> getGroups(String userName){
 		List<UserGroupInfo> l=new ArrayList<>();
 		try(RandomAccessFile raf=new RandomAccessFile("usergroup.dat","rw")){
 			final int size=32*2;
@@ -139,36 +141,49 @@ public class DBHelper {
 		}
 		
 	}
-	public static boolean deleteFriend(FriendInfo friendInfo){
+	public synchronized static boolean deleteFriend(FriendInfo friendInfo){
 		
-		try(RandomAccessFile raf=new RandomAccessFile("userfriend.dat", "rw");) {
+		try(RandomAccessFile raf=new RandomAccessFile("userfriend.dat","rw")){
 			final int size=32*3;
-			final int offset=32;
-			if(moveCursor(raf, friendInfo.getUserName()+friendInfo.getFriendName(),
-					size, offset)){
-				
-				getEndLine(raf, size, raf.getFilePointer());
-				overrideLine(raf,
-						getEndLine(raf, size,raf.getFilePointer()),
-						raf.getFilePointer());
-				deleteEndLine(raf, size);
-				return true;
-			}
+			final int nameOffset=0;
+			final int friendOffset=32*2;
+			moveCursorByKeys(raf, 
+					new String[]{
+							friendInfo.getUserName(),
+							friendInfo.getFriendName()}, 
+					size, 
+					new Integer[]{
+							nameOffset,
+							friendOffset},
+					new DBHandler() {
+						
+						@Override
+						public void execute(RandomAccessFile raf, String[] keys, int size, Integer[] keyoffsets,int mod) throws IOException {
+							overrideLine(raf,
+									getEndLine(raf, size,raf.getFilePointer()),
+									raf.getFilePointer());
+							deleteEndLine(raf, size);
+							
+							
+						}
+					},DBHandler.DELETE);
 			
+			return true;
 			
-			return false;
-		} catch (IOException e) {
-			
+		}catch(Exception e){
 			e.printStackTrace();
 			return false;
 		}
 		
 	}
-	public static boolean deleteFriends(UserGroupInfo userGroupInfo){
+	
+	
+	
+	public synchronized static boolean deleteFriends(UserGroupInfo userGroupInfo){
 		final int size=32*3;
 		final int nameOffset=0;
 		final int groupOffset=32;
-		try(RandomAccessFile raf=new RandomAccessFile("userfrined.dat","rw")){
+		try(RandomAccessFile raf=new RandomAccessFile("userfriend.dat","rw")){
 			moveCursorByKeys(raf, 
 					new String[]{
 							userGroupInfo.getUserName(),
@@ -199,8 +214,8 @@ public class DBHelper {
 		
 		
 	}
-	public static boolean addFriend(FriendInfo friendInfo){
-		try(RandomAccessFile raf=new RandomAccessFile("userfrined.dat","rw")){
+	public synchronized static boolean addFriend(FriendInfo friendInfo){
+		try(RandomAccessFile raf=new RandomAccessFile("userfriend.dat","rw")){
 			
 			raf.seek(raf.length());
 			
@@ -214,7 +229,7 @@ public class DBHelper {
 		}
 	}
 	
-	public static List<FriendInfo> getFriendList(UserInfo userInfo){
+	public synchronized static List<FriendInfo> getFriendList(UserInfo userInfo){
 		List<FriendInfo> l= new ArrayList<>();
 		try(RandomAccessFile raf=new RandomAccessFile("userfriend.dat", "rw");) {
 			final int size=32*3;
@@ -251,7 +266,43 @@ public class DBHelper {
 
 		
 	}
-	public static boolean addUserGroup(UserGroupInfo userGroupInfo){
+	public synchronized static boolean deleteFriend(UserGroupInfo groupInfo){
+		List<FriendInfo> l= new ArrayList<>();
+		try(RandomAccessFile raf=new RandomAccessFile("userfriend.dat", "rw");) {
+			final int size=32*3;
+			final int nameOffset=32*2;
+			final int groupOffset=32;
+			moveCursorByKeys(raf, 
+					new String[]{
+							
+							groupInfo.getGroupName(),
+							groupInfo.getUserName()
+							},
+					size, 
+					new Integer[]{
+							nameOffset,
+							groupOffset
+							},
+					new DBHandler() {
+						
+						@Override
+						public void execute(RandomAccessFile raf, String[] keys, int size, Integer[] keyoffsets,int mod) throws IOException {
+							overrideLine(raf,
+									getEndLine(raf, size,raf.getFilePointer()),
+									raf.getFilePointer());
+							deleteEndLine(raf, size);
+						}
+					},DBHandler.DELETE);
+			
+			return true;
+		}catch(Exception e){
+			e.printStackTrace();
+			return false;
+		}
+
+		
+	}
+	public synchronized static boolean addUserGroup(UserGroupInfo userGroupInfo){
 		
 		try(RandomAccessFile raf=new RandomAccessFile("usergroup.dat", "rw");) {
 			raf.seek(raf.length());
@@ -268,10 +319,10 @@ public class DBHelper {
 		}
 		
 	}
-	public static boolean deleteUserGroup(UserGroupInfo userGroupInfo){
+	public synchronized static boolean deleteUserGroup(UserGroupInfo userGroupInfo){
 		
 		try(RandomAccessFile raf=new RandomAccessFile("usergroup.dat", "rw");) {
-			final int size=32*3;
+			final int size=32*2;
 			final int nameOffset=0;
 			final int groupOffset=32;
 			moveCursorByKeys(raf, 
@@ -308,34 +359,51 @@ public class DBHelper {
 		
 	}
 	
-	public static UserGroupInfo getGroup(String groupName){
+	public synchronized static UserGroupInfo getGroup(String userName,String groupName){
 		
 		try(RandomAccessFile raf=new RandomAccessFile("usergroup.dat","rw");){
-			final int size=32*2;
-			final int offset=32;
-			byte[] b=new byte[32];
-			if(moveCursor(raf, groupName, size, offset)){
-				raf.read(b);
-				String userName=new String(b,"utf-8").trim();
-				raf.read(b);
-				groupName=new String(b,"utf-8").trim();
-				return new UserGroupInfo(userName, groupName);
+			 final int size=32*2;
+			 final int nameOffset=0;
+			 final int groupOffset=32;
+			 final  UserGroupInfo g=new UserGroupInfo();
+			moveCursorByKeys(raf, new String[]{
+					userName,
+					groupName
+				}, 
+				size, 
+				new Integer[]{
+						nameOffset,
+						groupOffset
+				}, new DBHandler() {
+					
+					@Override
+					public void execute(RandomAccessFile raf, String[] keys, int size, Integer[] keyoffsets,int mod) throws IOException {
+						System.out.println("getGroup: "+userName+" "+groupName);
+						byte[] b=new byte[32];
+						raf.read(b);
+						String s=new String(b,"utf-8").trim();
+						raf.read(b);
+						String s1=new String(b,"utf-8").trim();
+						g.setUserName(s);
+						g.setGroupName(s1);
+						raf.seek(raf.getFilePointer()-32*2);
+					}
+				},DBHandler.GET);
 				
-			}
+			if(g.getUserName()!=null) return g;
 			return null;
-			
-		}catch(Exception e){
+		}catch(IOException e){
 			e.printStackTrace();
 			return null;
 		}
 		
 	}
-	public static boolean moveToGroup(UserGroupInfo src,UserGroupInfo tag) throws IOException{
+	public synchronized static boolean moveToGroup(UserGroupInfo src,UserGroupInfo tag) throws IOException{
 		
 		try(RandomAccessFile raf=new RandomAccessFile("userfriend.dat","rw");){
 			 final int size=32*3;
 			 final int nameOffset=0;
-			 final int groupOffset=32*2;
+			 final int groupOffset=32;
 			 
 			moveCursorByKeys(raf, new String[]{
 					src.getUserName(),
@@ -357,7 +425,7 @@ public class DBHelper {
 				},DBHandler.MODIFY);
 				
 			
-			return false;
+			return true;
 		}catch(IOException e){
 			e.printStackTrace();
 			return false;
@@ -365,12 +433,12 @@ public class DBHelper {
 		
 		
 	}
-	public static boolean modifyGroupName(UserGroupInfo src,UserGroupInfo tag){
+	public synchronized static boolean modifyGroupFriend(UserGroupInfo src,UserGroupInfo tag){
 		try(RandomAccessFile raf=new RandomAccessFile("userfriend.dat","rw");){
 			 final int size=32*3;
 			 final int nameOffset=0;
-			 final int groupOffset=32*2;
-			 
+			 final int groupOffset=32;
+			 System.out.println("modifyGroupName");
 			moveCursorByKeys(raf, new String[]{
 					src.getUserName(),
 					src.getGroupName()
@@ -391,7 +459,7 @@ public class DBHelper {
 				},DBHandler.MODIFY);
 				
 			
-			return false;
+			return true;
 		}catch(IOException e){
 			e.printStackTrace();
 			return false;
@@ -400,8 +468,42 @@ public class DBHelper {
 		
 		
 	}
-	
-	private static boolean moveCursor(RandomAccessFile raf,String key,
+	public synchronized static boolean modifyGroupName(UserGroupInfo src,UserGroupInfo tag){
+		try(RandomAccessFile raf=new RandomAccessFile("usergroup.dat","rw");){
+			 final int size=32*2;
+			 final int nameOffset=0;
+			 final int groupOffset=32;
+			
+			moveCursorByKeys(raf, new String[]{
+					src.getUserName(),
+					src.getGroupName()
+				}, 
+				size, 
+				new Integer[]{
+						nameOffset,
+						groupOffset
+				}, new DBHandler() {
+					
+					@Override
+					public void execute(RandomAccessFile raf, String[] keys, int size, Integer[] keyoffsets,int mod) throws IOException {
+						
+						raf.seek(raf.getFilePointer()+groupOffset);
+						raf.write(Arrays.copyOf(tag.getGroupName().getBytes("utf-8"), 32));
+						raf.seek(raf.getFilePointer()-groupOffset-32);
+					}
+				},DBHandler.MODIFY);
+				
+			
+			return true;
+		}catch(IOException e){
+			e.printStackTrace();
+			return false;
+		}
+		
+		
+		
+	}
+	private synchronized static boolean moveCursor(RandomAccessFile raf,String key,
 			int size,int keyoffset) throws IOException{
 		if(size<0||keyoffset<0) throw new IOException("size or keyoffset must not be less than 0");
 		if(raf.length()<(raf.getFilePointer()+keyoffset)) return false;
@@ -421,7 +523,7 @@ public class DBHelper {
 		return false;
 	}
 	
-	private static void moveCursorByKeys(RandomAccessFile raf,String[] keys,
+	private synchronized static void moveCursorByKeys(RandomAccessFile raf,String[] keys,
 			int size,Integer[] keyoffsets,DBHandler handler,int mod) throws IOException{
 		
 		for(int i=0;i<keys.length;i++){
@@ -438,8 +540,9 @@ public class DBHelper {
 		for(long pos=0;pos<raf.length();){
 			
 			if(compareLine(raf, keys, size, keyoffsets)){
-				
+				System.out.println("cmp true");
 				handler.execute(raf, keys, size, keyoffsets,mod);
+				System.out.println("handler execute");
 				if(mod==DBHandler.DELETE) continue;
 				else ;
 				
@@ -455,7 +558,7 @@ public class DBHelper {
 		
 		
 	}
-	private static boolean compareLine(RandomAccessFile raf,String[] keys,
+	private synchronized static boolean compareLine(RandomAccessFile raf,String[] keys,
 			int size,Integer[] keyoffsets) throws IOException{
 		byte[] b=new byte[32];
 		int keyoffset=0;
@@ -463,7 +566,7 @@ public class DBHelper {
 		for(int i=0;i<keys.length;i++){
 			keyoffset=keyoffsets[i];
 			key=keys[i];
-			
+			System.out.println("cmp");
 			raf.seek(raf.getFilePointer()+keyoffset);
 			raf.read(b);
 			String s=new String(b,"utf-8").trim();
@@ -481,13 +584,13 @@ public class DBHelper {
 		
 		return true;
 	}
-	private static void overrideLine(RandomAccessFile raf,byte[] data,long cursor) throws IOException{
+	private synchronized static void overrideLine(RandomAccessFile raf,byte[] data,long cursor) throws IOException{
 		if(data==null) return;
 		raf.write(data);
 		raf.seek(cursor);
 		
 	}
-	private static byte[] getEndLine(RandomAccessFile raf,int size,long cursor) throws IOException{
+	private synchronized static byte[] getEndLine(RandomAccessFile raf,int size,long cursor) throws IOException{
 		if(raf.length()-size<0) return null;
 		raf.seek(raf.length()-size);
 		byte[] bytes=new byte[size];
@@ -496,14 +599,114 @@ public class DBHelper {
 		return bytes;
 		
 	}
-	private static void deleteEndLine(RandomAccessFile raf,int size) throws IOException{
+	private synchronized static void deleteEndLine(RandomAccessFile raf,int size) throws IOException{
 		if(raf.length()-size<0) return;
 		raf.setLength(raf.length()-size);
 		
 		
 	}
-	
-	
+	public synchronized static void showUsers(){
+		try(RandomAccessFile raf=new RandomAccessFile("user.dat", "rw");){
+			System.out.println("ShowUsers: ");
+			for(int i=0;i<raf.length()/(32*2);i++){
+				raf.seek(i*32*2);
+				byte[] b=new byte[32];
+				raf.read(b);
+				String s=new String(b,"utf-8").trim();
+				raf.read(b);
+				String s1=new String(b,"utf-8").trim();
+				System.out.println("UserName: "+s+"  UserPwd: "+s1);
+				
+			}
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+	}
+	public synchronized static void crtUser(String userName,String userPwd){
+		try(RandomAccessFile raf=new RandomAccessFile("user.dat", "rw");){
+			System.out.println("CreateUser: ");
+			
+			raf.seek(raf.length());
+				
+			raf.write(Arrays.copyOf(userName.getBytes("utf-8"),32));
+			
+			raf.write(Arrays.copyOf(userPwd.getBytes("utf-8"),32));
+				
+			
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+	}
+	public synchronized static void showGroups(){
+		try(RandomAccessFile raf=new RandomAccessFile("usergroup.dat", "rw");){
+			System.out.println("ShowGroups: ");
+			for(int i=0;i<raf.length()/(32*2);i++){
+				raf.seek(i*32*2);
+				byte[] b=new byte[32];
+				raf.read(b);
+				String s=new String(b,"utf-8").trim();
+				raf.read(b);
+				String s1=new String(b,"utf-8").trim();
+				
+				System.out.println("UserName: "+s+"  UserGroup: "+s1);
+				
+			}
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+	}
+	public synchronized static void crtGroup(String userName,String groupName){
+		try(RandomAccessFile raf=new RandomAccessFile("usergroup.dat", "rw");){
+			System.out.println("CreateGroup: ");
+			
+			raf.seek(raf.length());
+				
+			raf.write(Arrays.copyOf(userName.getBytes("utf-8"),32));
+			
+			raf.write(Arrays.copyOf(groupName.getBytes("utf-8"),32));
+			
+				
+			
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+	}
+	public synchronized static void showFriends(){
+		try(RandomAccessFile raf=new RandomAccessFile("userfriend.dat", "rw");){
+			System.out.println("ShowFriends: ");
+			for(int i=0;i<raf.length()/(32*3);i++){
+				raf.seek(i*32*3);
+				byte[] b=new byte[32];
+				raf.read(b);
+				String s=new String(b,"utf-8").trim();
+				raf.read(b);
+				String s1=new String(b,"utf-8").trim();
+				raf.read(b);
+				String s2=new String(b,"utf-8").trim();
+				System.out.println("UserName: "+s+"  UserGroup: "+s1
+						+"  FriendName: "+s2);
+				
+			}
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+	}
+	public synchronized static void crtFriend(String userName,String groupName,String friendName){
+		try(RandomAccessFile raf=new RandomAccessFile("userfriend.dat", "rw");){
+			System.out.println("CreateFriend: ");
+			
+			raf.seek(raf.length());
+				
+			raf.write(Arrays.copyOf(userName.getBytes("utf-8"),32));
+			
+			raf.write(Arrays.copyOf(groupName.getBytes("utf-8"),32));
+			raf.write(Arrays.copyOf(friendName.getBytes("utf-8"),32));
+				
+			
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+	}
 	private  interface DBHandler{
 		final int DELETE=10004;
 		final int MODIFY=10003;

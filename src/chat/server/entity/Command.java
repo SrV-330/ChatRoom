@@ -14,6 +14,7 @@ public class Command implements Serializable{
 	public static final int RECEIVE_MSG=4;
 	public static final int ADD_FRIEND=5;
 	public static final int REMOVE_FRIEND=6;
+	public static final int LOGOFF=7;
 	public static final int NOT_ON_LINE=20;
 	public static final int NOT_FRIEND=20;
 	public static final int NEW_GROUP=10;
@@ -22,6 +23,7 @@ public class Command implements Serializable{
 	public static final int MODIFY_GROUP_NAME=13;
 	public static final int SUCCESS=101;
 	public static final int FAIL=102;
+	public static final int F5=103;
 	
 	
 	@JsonSetter
