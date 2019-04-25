@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Queue;
 import java.util.Stack;
 
-import chat.server.entity.LoginInfo;
 import chat.server.util.json.annotation.JsonBody;
 import chat.server.util.json.annotation.JsonGetter;
 import chat.server.util.json.annotation.JsonSetter;

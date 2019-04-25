@@ -63,7 +63,7 @@ public class ChatClient {
 			}
 			System.out.println("connect time out");
 			JOptionPane.showMessageDialog(null,"connect time out","tip", JOptionPane.ERROR_MESSAGE);
-			System.exit(0);
+			//System.exit(0);
 		} 
 		
 	}

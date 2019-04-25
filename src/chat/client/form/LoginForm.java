@@ -1,6 +1,7 @@
 package chat.client.form;
 
 
+import java.awt.Color;
 import java.awt.Font;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -11,14 +12,14 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
-import javax.swing.UIManager;
 
-import org.jb2011.lnf.beautyeye.BeautyEyeLNFHelper;
 import org.jb2011.lnf.beautyeye.ch3_button.BEButtonUI;
 
 import chat.client.ChatClient;
 import chat.client.ClientContext;
 import chat.client.util.Vaild;
+import chat.server.entity.Command;
+import chat.server.entity.UserInfo;
 
 
 public class LoginForm extends JFrame {
@@ -34,9 +35,9 @@ public class LoginForm extends JFrame {
 	private JPasswordField txt_pwd;
 	private JLabel lbl_name;
 	private JLabel lbl_pwd;
-	
 	private JLabel lbl_title;
-	
+	private JLabel lbl_reg;
+	private static RegForm regForm;
 	private ChatClient client;
 	private static LoginForm loginForm;
 	public static LoginForm getInstance(){
@@ -55,7 +56,7 @@ public class LoginForm extends JFrame {
 		super();
 		client=ChatClient.getInstance();
 		this.setTitle("Login");
-		this.setSize(400,250);
+		this.setSize(430,250);
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		this.setLocationRelativeTo(null);
 		this.setResizable(false);
@@ -89,6 +90,10 @@ public class LoginForm extends JFrame {
 					return;
 				}
 				
+				Command cmd=new UserInfo(userName,userPwd);
+				cmd.setCmd(Command.LOGIN);
+				
+				
 				
 				
 			}
@@ -111,13 +116,32 @@ public class LoginForm extends JFrame {
 			
 		});
 		
+		
+		lbl_reg=new JLabel();
+		lbl_reg.setText("Register");
+		lbl_reg.setSize(100,20);
+		lbl_reg.setLocation(70+60+100+100+10,165);
+		lbl_reg.setFont(new Font("微软雅黑", Font.BOLD, 15));
+		lbl_reg.setForeground(Color.BLUE);
+		
+		lbl_reg.addMouseListener(new MouseAdapter() {
+
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				LoginForm.this.setVisible(false);
+				LoginForm.regForm=RegForm.getInstance(client, loginForm);
+				LoginForm.regForm.showForm();
+			}
+			
+		});
+		
 		txt_name=new JTextField();
-		txt_name.setSize(180,30);
-		txt_name.setLocation(150, 60);
+		txt_name.setSize(160,30);
+		txt_name.setLocation(170, 60);
 		
 		txt_pwd=new JPasswordField();
-		txt_pwd.setSize(180,30);
-		txt_pwd.setLocation(150, 110);
+		txt_pwd.setSize(160,30);
+		txt_pwd.setLocation(170, 110);
 		
 		
 		lbl_name=new JLabel("UserName: ");
@@ -136,6 +160,7 @@ public class LoginForm extends JFrame {
 		
 		this.add(btn_login);
 		this.add(btn_cancel);
+		this.add(lbl_reg);
 		this.add(txt_name);
 		this.add(txt_pwd);
 		this.add(lbl_name);

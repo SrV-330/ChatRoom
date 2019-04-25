@@ -11,8 +11,7 @@ public class UserGroupInfo extends Command implements Serializable{
 	private String groupName;
 
 	
-	public static final int GROUP_REPEATE=13;
-	public static final int NO_THE_GROUP=14;
+	
 
 	
 

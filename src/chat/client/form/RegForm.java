@@ -1,6 +1,7 @@
 package chat.client.form;
 
 
+import java.awt.Color;
 import java.awt.Font;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -31,28 +32,30 @@ public class RegForm extends JFrame {
 	private JPasswordField txt_pwd;
 	private JLabel lbl_name;
 	private JLabel lbl_pwd;
-	
 	private JLabel lbl_title;
+	private JLabel lbl_login;
 	
+	private static LoginForm loginForm;
 	private ChatClient client;
 	private static RegForm regForm;
-	public static RegForm getInstance(ChatClient client){
+	public static RegForm getInstance(ChatClient client,LoginForm loginForm){
 		if(regForm==null){
 			synchronized (RegForm.class) {
 				
 				if(regForm==null){
-					regForm=new RegForm(client);
+					regForm=new RegForm(client,loginForm);
 					return regForm;
 				}
 			}
 		}
 		return regForm;
 	}
-	private RegForm(ChatClient client) {
+	private RegForm(ChatClient client,LoginForm loginForm) {
 		super();
 		this.client=client;
+		RegForm.loginForm=loginForm;
 		this.setTitle("Register");
-		this.setSize(400,250);
+		this.setSize(430,250);
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		this.setLocationRelativeTo(null);
 		this.setResizable(false);
@@ -86,7 +89,7 @@ public class RegForm extends JFrame {
 					return;
 				}
 				
-				
+				//TODO
 				
 			}
 			
@@ -108,13 +111,35 @@ public class RegForm extends JFrame {
 			
 		});
 		
+		
+		
+		lbl_login=new JLabel();
+		lbl_login.setText("Login");
+		lbl_login.setSize(100,20);
+		lbl_login.setLocation(70+60+100+100+10,165);
+		lbl_login.setFont(new Font("微软雅黑", Font.BOLD, 15));
+		lbl_login.setForeground(Color.BLUE);
+		
+		lbl_login.addMouseListener(new MouseAdapter() {
+
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				
+				RegForm.loginForm.showForm();
+				
+				RegForm.this.dispose();
+			}
+			
+		});
+		
+		
 		txt_name=new JTextField();
-		txt_name.setSize(180,30);
-		txt_name.setLocation(150, 60);
+		txt_name.setSize(160,30);
+		txt_name.setLocation(170, 60);
 		
 		txt_pwd=new JPasswordField();
-		txt_pwd.setSize(180,30);
-		txt_pwd.setLocation(150, 110);
+		txt_pwd.setSize(160,30);
+		txt_pwd.setLocation(170, 110);
 		
 		
 		lbl_name=new JLabel("UserName: ");
@@ -133,6 +158,7 @@ public class RegForm extends JFrame {
 		
 		this.add(btn_reg);
 		this.add(btn_cancel);
+		this.add(lbl_login);
 		this.add(txt_name);
 		this.add(txt_pwd);
 		this.add(lbl_name);
@@ -148,7 +174,7 @@ public class RegForm extends JFrame {
 		regForm.setVisible(true);
 	}
 	public static void main(String[] args) {
-		RegForm regForm=RegForm.getInstance(null);
+		RegForm regForm=RegForm.getInstance(null,null);
 		regForm.showForm();
 	}
 	
