@@ -10,20 +10,37 @@ public class Command implements Serializable{
 	public static final int NAC=0;
 	public static final int LOGIN=1;
 	public static final int REGIST=2;
-	public static final int SEND_MSG=3;
-	public static final int RECEIVE_MSG=4;
-	public static final int ADD_FRIEND=5;
-	public static final int REMOVE_FRIEND=6;
-	public static final int LOGOFF=7;
-	public static final int NOT_ON_LINE=20;
-	public static final int NOT_FRIEND=20;
+	public static final int LOGOFF=3;
+	
+	public static final int SEND_MSG=4;
+	public static final int RECEIVE_MSG=5;
+	
+	public static final int ADD_FRIEND=6;
+	public static final int REMOVE_FRIEND=7;
+	
 	public static final int NEW_GROUP=10;
 	public static final int REMOVE_GROUP=11;
 	public static final int MOVE_TO_GROUP=12;
 	public static final int MODIFY_GROUP_NAME=13;
+	
+	
+	public static final int NOT_ON_LINE=20;
+	public static final int NOT_FRIEND=21;
+	public static final int EXISTS_USER=22;
+	public static final int NO_THE_USER=23;
+	
+	public static final int GROUP_REPEATE=24;
+	public static final int NO_THE_GROUP=25;
+	
+	
+	
+	public static final int F5=40;
+	
 	public static final int SUCCESS=101;
 	public static final int FAIL=102;
-	public static final int F5=103;
+	
+	
+	
 	
 	
 	@JsonSetter

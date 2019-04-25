@@ -18,15 +18,9 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import javax.smartcardio.CommandAPDU;
-
-import org.omg.CORBA.COMM_FAILURE;
-
 import chat.server.entity.Command;
 import chat.server.entity.FriendGroupInfo;
 import chat.server.entity.FriendInfo;
-import chat.server.entity.LoginInfo;
-import chat.server.entity.RegisterInfo;
 import chat.server.entity.SendMessageInfo;
 import chat.server.entity.UserGroupInfo;
 import chat.server.entity.UserGroupModifyInfo;
@@ -84,40 +78,27 @@ public class ChatServer {
 	
 	private void start(){
 		Socket socket=null;
-		while(true){
-			
 			try {
-				 socket= server.accept();
-				
-				
-				
-				executor.execute(new ClientHandler(socket));
-				
-				
-				
+				while(true){
+					socket= server.accept();
+					executor.execute(new ClientHandler(socket));
+				}
 			} catch (IOException e) {
 				
 				e.printStackTrace();
+				
+			}finally {
 				try {
 					if(socket!=null){
 						
 						socket.close();
 					}
 					
-				} catch (IOException e1) {
+				} catch (IOException e) {
 				
 					e.printStackTrace();
 				}
 			}
-			finally{
-				
-			}
-			
-		}
-			
-		
-		
-		
 	}
 	
 	class ClientHandler implements Runnable{
@@ -138,6 +119,10 @@ public class ChatServer {
 				this.out=this.socket.getOutputStream();
 				ois=new ObjectInputStream(in);
 				oos=new ObjectOutputStream(out);
+				synchronized (sockets) {
+					sockets.add(socket);
+				}
+				System.out.println(sockets);
 	
 			} catch (IOException e) {
 				
@@ -145,100 +130,86 @@ public class ChatServer {
 			}
 			
 		}
-		
-		
-		
-
-
 		@Override
 		public void run() {
 			
 			try {
-				synchronized (sockets) {
-					sockets.add(socket);
-				}
-				
-				System.out.println(sockets);
-				
-				
-				Command cmd=(Command)ois.readObject();
-				
-				
-				
-				switch (cmd.getCmd()) {
-				case Command.LOGIN:
-					doLogin(cmd);
-					break;
-				case Command.REGIST:
-					doRegist(cmd);
-					break;
-				case Command.LOGOFF:
-					doLogoff(cmd);
-					break;
-				case Command.ADD_FRIEND:
-					doAddFriend(cmd);
-					break;
-				case Command.REMOVE_FRIEND:
-					doRemoveFriend(cmd);
-					break;
-				case Command.SEND_MSG:
-					doSendMessage(cmd);
-					break;
-				case Command.NEW_GROUP:
-					doNewGroup(cmd);
-					break;
-				case Command.REMOVE_GROUP:
-					doDeleteGroup(cmd);
-					break;
-				case Command.MODIFY_GROUP_NAME:
-					doModifyGroupName(cmd);
-					break;
-				case Command.MOVE_TO_GROUP:
-					doMoveToGroup(cmd);
-					break;
-				case Command.F5:
-					doFresh(cmd);
-				default:
-					break;
+				while(true){
+					System.out.println("Command: ");
+					Command cmd=(Command)ois.readObject();
+					
+					if(cmd==null) return;
+					
+					
+					switch (cmd.getCmd()) {
+					case Command.LOGIN:
+						doLogin(cmd);
+						break;
+					case Command.REGIST:
+						doRegist(cmd);
+						break;
+					case Command.LOGOFF:
+						doLogoff(cmd);
+						break;
+					case Command.ADD_FRIEND:
+						doAddFriend(cmd);
+						break;
+					case Command.REMOVE_FRIEND:
+						doRemoveFriend(cmd);
+						break;
+					case Command.SEND_MSG:
+						doSendMessage(cmd);
+						break;
+					case Command.NEW_GROUP:
+						doNewGroup(cmd);
+						break;
+					case Command.REMOVE_GROUP:
+						doDeleteGroup(cmd);
+						break;
+					case Command.MODIFY_GROUP_NAME:
+						doModifyGroupName(cmd);
+						break;
+					case Command.MOVE_TO_GROUP:
+						doMoveToGroup(cmd);
+						break;
+					case Command.F5:
+						doFresh(cmd);
+						break;
+					default:
+						break;
+					}
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
-				try {
-					out.write(Command.FAIL);
-				} catch (IOException e1) {
-					
-					e1.printStackTrace();
-				}
+				
 			}finally{
+				
 				try {
 					if(ois!=null)
 						ois.close();
-					
-					if(out!=null)
-						out.close();
-					
-					if(in!=null)
-						in.close();
+					if(oos!=null)
+						oos.close();
 					synchronized (sockets) {
 						synchronized (users) {
 							sockets.remove(socket);
-							
 							users.remove(user);
-							
 						}
-						
-						
 					}
-					System.out.println(sockets);
-					System.out.println(users);
-					DBHelper.showUsers();
-					DBHelper.showGroups();
-					DBHelper.showFriends();
-					
+					if(socket!=null)
+						socket.close();
 				} catch (IOException e) {
-				
+					
 					e.printStackTrace();
-				}
+				}	
+				
+				
+				System.out.println(sockets);
+				System.out.println(users);
+				DBHelper.showUsers();
+				DBHelper.showGroups();
+				DBHelper.showFriends();
+				
+				
 			}
 			
 			
@@ -250,7 +221,7 @@ public class ChatServer {
 				UserInfo loginInfo=(UserInfo)cmd;
 				UserInfo userInfo=DBHelper.getUser(loginInfo.getUserName());
 				if(userInfo==null){
-					c.setCmd(UserInfo.NO_THE_USER);
+					c.setCmd(Command.NO_THE_USER);
 					
 					oos.writeObject(c);
 					
@@ -310,7 +281,7 @@ public class ChatServer {
 			if(cmd instanceof FriendInfo){
 				FriendInfo f=(FriendInfo)cmd;
 				if(DBHelper.getUser(f.getFriendName())==null){
-					c.setCmd(UserInfo.NO_THE_USER);
+					c.setCmd(Command.NO_THE_USER);
 					oos.writeObject(c);
 					return;
 				}
@@ -340,7 +311,7 @@ public class ChatServer {
 			if(cmd instanceof FriendInfo){
 				FriendInfo f=(FriendInfo)cmd;
 				if(DBHelper.getUser(f.getFriendName())==null){
-					c.setCmd(UserInfo.NO_THE_USER);
+					c.setCmd(Command.NO_THE_USER);
 					oos.writeObject(c);
 					return;
 				}
@@ -354,13 +325,13 @@ public class ChatServer {
 					if(DBHelper.addFriend(f)){
 						System.out.println(f);
 					
-						c.setCmd(UserInfo.SUCCESS);
+						c.setCmd(Command.SUCCESS);
 						oos.writeObject(c);
 						return;
 					}
 				}
 			}
-			c.setCmd(UserInfo.FAIL);
+			c.setCmd(Command.FAIL);
 			oos.writeObject(c);
 			
 		}
@@ -412,7 +383,7 @@ public class ChatServer {
 			if(cmd instanceof UserInfo){
 				UserInfo registerInfo=(UserInfo)cmd;
 				if(DBHelper.getUser(registerInfo.getUserName())!=null){
-					c.setCmd(RegisterInfo.EXISTS_USER);
+					c.setCmd(Command.EXISTS_USER);
 					oos.writeObject(c);
 					
 					return;
@@ -444,12 +415,12 @@ public class ChatServer {
 			if(cmd instanceof UserGroupModifyInfo){
 				UserGroupModifyInfo ugmi=(UserGroupModifyInfo)cmd;
 				if(ugmi.getSrc().equals(ugmi.getTar())){
-					c.setCmd(UserGroupInfo.GROUP_REPEATE);
+					c.setCmd(Command.GROUP_REPEATE);
 					oos.writeObject(c);
 					return;
 				}
 				if(DBHelper.getGroup(ugmi.getUserName(),ugmi.getTar())==null){
-					c.setCmd(UserGroupInfo.NO_THE_GROUP);
+					c.setCmd(Command.NO_THE_GROUP);
 					oos.writeObject(c);
 					return;
 				}
@@ -457,13 +428,13 @@ public class ChatServer {
 				UserGroupInfo tar=new UserGroupInfo();
 				tar.setGroupName(ugmi.getTar());
 				if(DBHelper.moveToGroup(src,tar)){
-					c.setCmd(UserGroupInfo.SUCCESS);
+					c.setCmd(Command.SUCCESS);
 					oos.writeObject(c);
 					return;
 				}
 				
 			}
-			c.setCmd(UserGroupInfo.FAIL);
+			c.setCmd(Command.FAIL);
 			oos.writeObject(c);
 			
 		}
@@ -479,18 +450,18 @@ public class ChatServer {
 				UserGroupModifyInfo ugmi=(UserGroupModifyInfo)cmd;
 				
 				if(DBHelper.getUser(ugmi.getUserName())==null){
-					c.setCmd(UserInfo.NO_THE_USER);
+					c.setCmd(Command.NO_THE_USER);
 					oos.writeObject(c);
 					return;
 				}
 				if(ugmi.getSrc().equals(ugmi.getTar())){
-					c.setCmd(UserGroupInfo.GROUP_REPEATE);
+					c.setCmd(Command.GROUP_REPEATE);
 					
 					oos.writeObject(c);
 					return;
 				}
 				if(DBHelper.getGroup(ugmi.getUserName(),ugmi.getTar())!=null){
-					c.setCmd(UserGroupInfo.GROUP_REPEATE);
+					c.setCmd(Command.GROUP_REPEATE);
 					
 					oos.writeObject(c);
 					return;
@@ -564,7 +535,7 @@ public class ChatServer {
 				UserInfo loginInfo=(UserInfo)cmd;
 				UserInfo userInfo=DBHelper.getUser(loginInfo.getUserName());
 				if(userInfo==null){
-					c.setCmd(UserInfo.NO_THE_USER);
+					c.setCmd(Command.NO_THE_USER);
 					
 					oos.writeObject(c);
 					
@@ -605,16 +576,16 @@ public class ChatServer {
 				
 				UserGroupInfo userGroupInfo=(UserGroupInfo)cmd;
 				if(DBHelper.getGroup(userGroupInfo.getUserName(),userGroupInfo.getGroupName())!=null){
-					c.setCmd(UserGroupInfo.GROUP_REPEATE);
+					c.setCmd(Command.GROUP_REPEATE);
 					oos.writeObject(c);
 					return;
 				}
 				if(DBHelper.addUserGroup(userGroupInfo)){
-					c.setCmd(UserGroupInfo.SUCCESS);
+					c.setCmd(Command.SUCCESS);
 					oos.writeObject(c);
 					return;
 				}else{
-					c.setCmd(UserGroupInfo.FAIL);
+					c.setCmd(Command.FAIL);
 					oos.writeObject(c);
 				}
 				

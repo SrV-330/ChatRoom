@@ -1,5 +1,6 @@
 package chat.client;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -8,26 +9,38 @@ import java.net.Socket;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import javax.swing.JOptionPane;
+
 import chat.server.entity.Command;
-import chat.server.entity.FriendInfo;
-import chat.server.entity.UserGroupInfo;
-import chat.server.entity.UserGroupModifyInfo;
 import chat.server.util.json.JsonParser;
 
 public class ChatClient {
 
 	private static final Queue<Command> cmdQueue=new LinkedBlockingQueue<>();
-	private static final Queue<Command> reqQueue=new LinkedBlockingQueue<>();
+	private static final Queue<Command> cmdReqQueue=new LinkedBlockingQueue<>();
+	private static final Queue<Command> msgQueue=new LinkedBlockingQueue<>();
 	private Socket socket;
 	private JsonParser jp;
 	private OutputStream out;
 	private InputStream in;
 	private ObjectOutputStream oos;
 	private ObjectInputStream ois;
-	public ChatClient(){
+	private static ChatClient client;
+	public static ChatClient getInstance(){
+		if(client==null){
+			synchronized (ChatClient.class) {
+				if(client==null){
+					client=new ChatClient();
+					return client;
+				}
+			}
+		}
+		return client;
+	}
+	private ChatClient(){
 		init();
 	}
-	private void init(){
+	public void init(){
 		try {
 			System.out.println("connecting...");
 			socket=new Socket("127.0.0.1",8088);
@@ -40,7 +53,17 @@ public class ChatClient {
 			
 		} catch (Exception e) {
 			
-			e.printStackTrace();
+			try {
+				if(socket!=null){
+					socket.close();
+				}
+			} catch (IOException e1) {
+				
+				e1.printStackTrace();
+			}
+			System.out.println("connect time out");
+			JOptionPane.showMessageDialog(null,"connect time out","tip", JOptionPane.ERROR_MESSAGE);
+			System.exit(0);
 		} 
 		
 	}
@@ -70,21 +93,9 @@ public class ChatClient {
 			try{
 				
 				Command cmd=null;
-				
-				
 				while(true){
 					if(cmdQueue.isEmpty()) continue;
 					cmd=cmdQueue.poll();
-					if(cmd.getCmd()==Command.LOGOFF) break;
-					switch (cmd.getCmd()) {
-					case Command.LOGIN:
-							
-						
-						break;
-
-					default:
-						break;
-					}
 					oos.writeObject(cmd);
 				}
 				
@@ -115,11 +126,17 @@ public class ChatClient {
 				public void run(){
 					try {
 						while(true){
-							Command o=(Command) ois.readObject();
-							reqQueue.offer(o);
+							
+							Command cmd=(Command) ois.readObject();
+							if(cmd.getCmd()==Command.RECEIVE_MSG){
+								msgQueue.offer(cmd);
+							}else{
+								cmdReqQueue.offer(cmd);
+							}
+							
 							
 								
-							System.out.println(o);
+							System.out.println(cmd);
 								
 							
 						}
@@ -148,6 +165,46 @@ public class ChatClient {
 			};
 			read.setDaemon(true);
 			read.start();
+			Thread readMsg=new Thread(){
+				@Override
+				public void run(){
+					try {
+						while(true){
+							if(msgQueue.isEmpty()) continue;
+							Command cmd=msgQueue.poll();
+							//TODO
+							
+							
+								
+							System.out.println(cmd);
+								
+							
+						}
+						
+						
+					} catch (Exception e) {
+						
+						e.printStackTrace();
+					}finally{
+						try {
+							if(in!=null){
+								in.close();
+							}
+							if(out!=null){
+								out.close();
+							}
+							if(socket!=null){
+								socket.close();
+							}
+						} catch (Exception e1) {
+							
+							e1.printStackTrace();
+						}
+					}
+				}
+			};
+			readMsg.setDaemon(true);
+			readMsg.start();
 			
 		} catch (Exception e) {
 			
@@ -156,13 +213,12 @@ public class ChatClient {
 		
 	}
 	
+	public boolean addCommand(Command cmd){
+		return cmdQueue.offer(cmd);
+	}
 	public static void main(String[] args) throws Exception {
-		ChatClient client=new ChatClient();
-		
+		ChatClient client=ChatClient.getInstance();
 		client.start();
-			
-		
-		
 		
 	}
 }
