@@ -137,7 +137,7 @@ public class ChatServer {
 				while(true){
 					System.out.println("Command: ");
 					Command cmd=(Command)ois.readObject();
-					
+					System.out.println(cmd);
 					if(cmd==null) return;
 					
 					
@@ -556,6 +556,7 @@ public class ChatServer {
 						user=userInfo;
 					}
 					System.out.println(users);
+					System.out.println(fg);
 					oos.writeObject(fg);
 					
 				}else{

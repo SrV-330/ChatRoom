@@ -8,7 +8,7 @@ public class Vaild {
 	public static boolean vaild(String s){
 		try {
 			if(s.getBytes("utf-8").length>32) return false;
-			Pattern patter=Pattern.compile("^[A-Za-z]{1,1}[A-Za-z0-9]{0,15}$");
+			Pattern patter=Pattern.compile("^[A-Za-z]{1,1}[A-Za-z0-9]{2,15}$");
 			Matcher matcher=patter.matcher(s);
 			return matcher.matches();
 		} catch (UnsupportedEncodingException e) {

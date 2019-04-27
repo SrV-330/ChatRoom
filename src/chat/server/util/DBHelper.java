@@ -122,9 +122,9 @@ public class DBHelper {
 						@Override
 						public void execute(RandomAccessFile raf, String[] keys, int size, Integer[] keyoffsets,int mod) throws IOException {
 							byte[] b=new byte[32];
-							raf.write(b);
+							raf.read(b);
 							g.setUserName(new String(b,"utf-8").trim());
-							raf.write(b);
+							raf.read(b);
 							g.setGroupName(new String(b,"utf-8").trim());
 							
 							raf.seek(raf.getFilePointer()-32*2);
