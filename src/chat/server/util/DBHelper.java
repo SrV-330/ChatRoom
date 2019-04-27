@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import com.sun.org.apache.xalan.internal.xsltc.compiler.sym;
 
 import chat.server.entity.FriendInfo;
 import chat.server.entity.UserGroupInfo;
@@ -267,7 +266,7 @@ public class DBHelper {
 		
 	}
 	public synchronized static boolean deleteFriend(UserGroupInfo groupInfo){
-		List<FriendInfo> l= new ArrayList<>();
+		
 		try(RandomAccessFile raf=new RandomAccessFile("userfriend.dat", "rw");) {
 			final int size=32*3;
 			final int nameOffset=32*2;

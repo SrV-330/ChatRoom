@@ -6,7 +6,6 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
 import javax.swing.JButton;
-import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
@@ -16,6 +15,7 @@ import org.jb2011.lnf.beautyeye.ch3_button.BEButtonUI;
 
 import chat.client.ClientContext;
 
+@SuppressWarnings("serial")
 public class AbstractForm extends EmptyForm{
 	
 	private JButton btn_ok;

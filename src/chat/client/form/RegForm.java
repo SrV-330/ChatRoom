@@ -1,30 +1,21 @@
 package chat.client.form;
 
 
-import java.awt.Color;
-import java.awt.Font;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
 import javax.swing.JButton;
-import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
-import javax.swing.JPasswordField;
-import javax.swing.JTextField;
-import javax.swing.UIManager;
-
-import org.jb2011.lnf.beautyeye.BeautyEyeLNFHelper;
-import org.jb2011.lnf.beautyeye.ch3_button.BEButtonUI;
 
 import chat.client.ChatClient;
 import chat.client.ClientContext;
 import chat.client.util.Vaild;
 import chat.server.entity.Command;
-import chat.server.entity.FriendGroupInfo;
 import chat.server.entity.UserInfo;
 
 
+@SuppressWarnings("serial")
 public class RegForm extends AbstractForm {
 	
 	
@@ -100,7 +91,7 @@ public class RegForm extends AbstractForm {
 				}else if(cmd.getCmd()==Command.NO_THE_USER){
 					JOptionPane.showMessageDialog(null,"name or pwd error","tip", JOptionPane.ERROR_MESSAGE);
 				}else{
-					JOptionPane.showMessageDialog(null,"Login Fail","tip", JOptionPane.ERROR_MESSAGE);
+					JOptionPane.showMessageDialog(null,"Register Fail","tip", JOptionPane.ERROR_MESSAGE);
 				}
 				
 				

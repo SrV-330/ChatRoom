@@ -9,6 +9,7 @@ import javax.swing.JPanel;
 
 import chat.client.ClientContext;
 
+@SuppressWarnings("serial")
 public class EmptyForm extends JFrame {
 	
 	static {

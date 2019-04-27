@@ -11,9 +11,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import javax.swing.JOptionPane;
 
-import chat.client.form.EmptyForm;
 import chat.server.entity.Command;
-import chat.server.util.json.JsonParser;
 
 public class ChatClient {
 
@@ -24,7 +22,6 @@ public class ChatClient {
 	private static ChatClient client;
 	
 	private Socket socket;
-	private JsonParser jp;
 	private OutputStream out;
 	private InputStream in;
 	private ObjectOutputStream oos;
@@ -53,7 +50,6 @@ public class ChatClient {
 				if(connecting) return;
 				System.out.println("connecting...");
 				socket=new Socket("127.0.0.1",8088);
-				jp=new JsonParser();
 				out=socket.getOutputStream();
 				in=socket.getInputStream();
 				oos=new ObjectOutputStream(out);

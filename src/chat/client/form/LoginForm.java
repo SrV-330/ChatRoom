@@ -17,6 +17,7 @@ import chat.server.entity.FriendGroupInfo;
 import chat.server.entity.UserInfo;
 
 
+@SuppressWarnings("serial")
 public class LoginForm extends AbstractForm {
 
 	

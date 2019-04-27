@@ -7,7 +7,6 @@ import java.util.List;
 
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
-import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JTree;
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -17,8 +16,8 @@ import chat.client.ClientContext;
 import chat.server.entity.FriendGroupInfo;
 import chat.server.entity.FriendInfo;
 import chat.server.entity.UserGroupInfo;
-import chat.server.entity.UserInfo;
 
+@SuppressWarnings("serial")
 public class ChatForm extends EmptyForm{
 	
 	private static ChatForm chatForm;
@@ -121,6 +120,7 @@ public class ChatForm extends EmptyForm{
 		}
 		for(FriendInfo f:friendGroupInfo.getFriends()){
 			
+			@SuppressWarnings("unchecked")
 			Enumeration<DefaultMutableTreeNode> enums=
 					root.breadthFirstEnumeration();
 			

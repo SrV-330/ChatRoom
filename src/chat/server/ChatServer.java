@@ -1,14 +1,11 @@
 package chat.server;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
+
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -26,7 +23,6 @@ import chat.server.entity.UserGroupInfo;
 import chat.server.entity.UserGroupModifyInfo;
 import chat.server.entity.UserInfo;
 import chat.server.util.DBHelper;
-import chat.server.util.json.JsonParser;
 
 public class ChatServer {
 	
@@ -38,7 +34,6 @@ public class ChatServer {
 	
 	
 	private static ChatServer chatServer;
-	private JsonParser jp;
 	public static ChatServer getInstance(){
 		
 		
@@ -61,7 +56,6 @@ public class ChatServer {
 		try {
 			System.out.println("server starup");
 			server=new ServerSocket(8088);
-			jp=new JsonParser();
 			System.out.println("server lauch ");
 		} catch (Exception e) {
 			
