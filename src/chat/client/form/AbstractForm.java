@@ -70,20 +70,23 @@ public class AbstractForm extends EmptyForm{
 		
 		lbl_name=new JLabel();
 		addNameText(lbl_name);
+		lbl_name.setFont(new Font("黑体", Font.BOLD, 16));
 		lbl_name.setSize(90,30);
 		lbl_name.setLocation(80, 60);
 		
 		
 		lbl_pwd=new JLabel();
 		addPasswordText(lbl_pwd);
+		lbl_pwd.setFont(new Font("黑体", Font.BOLD, 16));
 		lbl_pwd.setSize(90,30);
 		lbl_pwd.setLocation(80, 110);
 		
 		lbl_title=new JLabel();
 		addTitle(lbl_title);
 		lbl_title.setFont(new Font("黑体", Font.BOLD, 20));
-		lbl_title.setSize(200,60);
-		lbl_title.setLocation(150, 0);
+		lbl_title.setSize(lbl_title.getFont().getSize()*lbl_title.getText().length(),60);
+		lbl_title.setLocation(this.getWidth()/2-lbl_title.getFont().getSize()*lbl_title.getText().length()/2+20, 0);
+		
 		
 		
 		JPanel jp_content=getContent();

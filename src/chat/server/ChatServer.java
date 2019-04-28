@@ -55,7 +55,7 @@ public class ChatServer {
 		
 		try {
 			System.out.println("server starup");
-			server=new ServerSocket(8088);
+			server=new ServerSocket(9099);
 			System.out.println("server lauch ");
 		} catch (Exception e) {
 			
@@ -306,6 +306,11 @@ public class ChatServer {
 				FriendInfo f=(FriendInfo)cmd;
 				if(DBHelper.getUser(f.getFriendName())==null){
 					c.setCmd(Command.NO_THE_USER);
+					oos.writeObject(c);
+					return;
+				}
+				if(DBHelper.getFriend(f)!=null){
+					c.setCmd(Command.ALREADY_IS_FRIEND);
 					oos.writeObject(c);
 					return;
 				}

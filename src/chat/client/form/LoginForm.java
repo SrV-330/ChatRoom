@@ -105,6 +105,7 @@ public class LoginForm extends AbstractForm {
 				if(cmd.getCmd()==Command.SUCCESS){
 					System.out.println(cmd);
 					getContext().setFriendGroupInfo((FriendGroupInfo)cmd);
+					getContext().setUser(new UserInfo(userName,userPwd));
 					LoginForm.this.hideForm();
 					ChatForm chatForm=ChatForm.getInstance(getContext());
 					chatForm.showForm();

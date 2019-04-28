@@ -25,12 +25,14 @@ public class Command implements Serializable{
 	
 	
 	public static final int NOT_ON_LINE=20;
+	
 	public static final int NOT_FRIEND=21;
 	public static final int EXISTS_USER=22;
 	public static final int NO_THE_USER=23;
+	public static final int ALREADY_IS_FRIEND=24;
 	
-	public static final int GROUP_REPEATE=24;
-	public static final int NO_THE_GROUP=25;
+	public static final int GROUP_REPEATE=25;
+	public static final int NO_THE_GROUP=26;
 	
 	
 	

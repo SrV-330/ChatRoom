@@ -1,16 +1,22 @@
 package chat.client.form;
 
 import java.awt.Component;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTree;
+import javax.swing.event.TreeModelEvent;
+import javax.swing.event.TreeModelListener;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeCellRenderer;
+import javax.swing.tree.DefaultTreeModel;
 
 import chat.client.ClientContext;
 import chat.server.entity.FriendGroupInfo;
@@ -23,7 +29,8 @@ public class ChatForm extends EmptyForm{
 	private static ChatForm chatForm;
 	private JTree tree;
 	private DefaultMutableTreeNode root;
-	
+	private DefaultMutableTreeNode _default;
+	private DefaultTreeModel model; 
 	private JButton btn_new_group;
 	private JButton btn_add_friend;
 	
@@ -62,10 +69,38 @@ public class ChatForm extends EmptyForm{
 		btn_add_friend.setLocation(10,10);
 		
 		
+		btn_add_friend.addMouseListener(new MouseAdapter() {
+
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				
+				super.mouseClicked(e);
+				AddFriendForm addFriendForm=AddFriendForm.getInstance(getContext());
+				addFriendForm.showForm();
+			}
+			
+			
+		});
+		
 		btn_new_group=new JButton("New Group");
 		btn_new_group.setSize(100,30);
 		btn_new_group.setLocation(10+100+10, 10);
 		
+		
+		btn_new_group.addMouseListener(new MouseAdapter() {
+
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				
+				super.mouseClicked(e);
+				
+				
+				NewGroupForm newGroupForm=NewGroupForm.getInstance(getContext());
+				newGroupForm.showForm();
+				
+			}
+			
+		});
 		
 		jp_btn.add(btn_add_friend);
 		jp_btn.add(btn_new_group);
@@ -75,26 +110,22 @@ public class ChatForm extends EmptyForm{
 		initTree();
 	}
 	private void initTree(){
-		DefaultMutableTreeNode root=new DefaultMutableTreeNode(new RootNode());
-		//DefaultMutableTreeNode def=new DefaultMutableTreeNode(new DefaultNode());
-		//DefaultMutableTreeNode emptyNode=new DefaultMutableTreeNode(new EmptyNode());
 		
-		//def.add(emptyNode);
-		//root.add(def);
+		DefaultMutableTreeNode root=new DefaultMutableTreeNode(new RootNode());
 		this.root=root;
 		
 		inflactTree();
 		
-		
 		CustomerRenderer render=new CustomerRenderer();
-		
-		
-		tree=new JTree(root,false);
+		tree=new JTree(model);
 		tree.setCellRenderer(render);
 		tree.setSize(350,700);
 		tree.setLocation(0, 0);
 		tree.setShowsRootHandles(true);
 		tree.setRootVisible(false);
+		//tree.setEditable(true);
+		
+		
 		
 		
 		
@@ -105,48 +136,66 @@ public class ChatForm extends EmptyForm{
 		
 		
 		
+		
+		
+		
+		
+		
+		
+		
+		
 	}
 	private void inflactTree(){
-		
+		model=new DefaultTreeModel(root);
+		model.addTreeModelListener(new TreeModelAdapter());
 		FriendGroupInfo friendGroupInfo=getContext().getFriendGroupInfo();
 		for(UserGroupInfo g:friendGroupInfo.getGroups()){
-			
-				DefaultMutableTreeNode node=new DefaultMutableTreeNode(g.getGroupName());
-				root.add(node);
-
-				DefaultMutableTreeNode empty=new DefaultMutableTreeNode(new EmptyNode());
-				node.add(empty);
-			
+				addGroup(g);
 		}
 		for(FriendInfo f:friendGroupInfo.getFriends()){
-			
-			@SuppressWarnings("unchecked")
-			Enumeration<DefaultMutableTreeNode> enums=
-					root.breadthFirstEnumeration();
-			
-			while(enums.hasMoreElements()){
-				DefaultMutableTreeNode childNode=enums.nextElement();
-				String s=childNode.getUserObject().toString();
-				
-				if(childNode.getLevel()==1&&s.equals(f.getGroupName())){
-					DefaultMutableTreeNode node=
-							new DefaultMutableTreeNode(f.getFriendName());
-					DefaultMutableTreeNode firstNode=childNode.getFirstLeaf();
-					if(firstNode.getUserObject().toString().equals(new EmptyNode().toString())){
-						childNode.remove(firstNode);
-					}
-					
-					childNode.add(node);
-				}
-			}
-			
+			addFriend(f);
 			
 		}
 	}
-	public void showForm(){
-		this.setVisible(true);
+	public void addGroup(UserGroupInfo group){
+		
+		DefaultMutableTreeNode node=new DefaultMutableTreeNode(group.getGroupName());
+		
+		if(node.toString().equals(DefaultNode._default)){
+			_default=node;
+		}
+		
+		model.insertNodeInto(node, root, 0);
+
+//		DefaultMutableTreeNode empty=new DefaultMutableTreeNode(new EmptyNode());
+//		node.add(empty);
+		model.reload();
 	}
-	
+	public void addFriend(FriendInfo friend){
+		
+		@SuppressWarnings("unchecked")
+		Enumeration<DefaultMutableTreeNode> enums=
+				root.breadthFirstEnumeration();
+		
+		while(enums.hasMoreElements()){
+			DefaultMutableTreeNode childNode=enums.nextElement();
+			String s=childNode.getUserObject().toString();
+
+			if(childNode.getLevel()==1&&s.equals(friend.getGroupName())){
+				DefaultMutableTreeNode node=
+						new DefaultMutableTreeNode(friend.getFriendName());
+				DefaultMutableTreeNode firstNode=childNode.getFirstLeaf();
+//				if(firstNode.getUserObject().toString().equals(EmptyNode.empty)){
+//					
+//					model.removeNodeFromParent(firstNode);
+//				}
+				
+				
+				model.insertNodeInto(node, childNode, 0);
+			}
+		}
+		model.reload();
+	}
 	class  CustomerRenderer extends DefaultTreeCellRenderer{
 
 		public CustomerRenderer() {
@@ -189,6 +238,8 @@ public class ChatForm extends EmptyForm{
 	}
 	
 	
+	
+	
 	class EmptyNode {
 		public final static String empty="(empty)";
 
@@ -214,7 +265,58 @@ public class ChatForm extends EmptyForm{
 			return _default;
 		}
 	}
-	
+	class TreeModelAdapter implements TreeModelListener{
+
+		@Override
+		public void treeNodesChanged(TreeModelEvent e) {
+//			DefaultMutableTreeNode node=(DefaultMutableTreeNode)e.getTreePath().getLastPathComponent();
+//			System.out.println(node.getLevel()+":"+node.toString());
+//			
+//			int index=e.getChildIndices()[0];
+//			node=(DefaultMutableTreeNode)node.getChildAt(index);
+//			System.out.println(node.toString());
+//			if(node.getLevel()==1&&node.toString().equals(DefaultNode._default)){
+//				
+//				if(!node.toString().equals(DefaultNode._default)){
+//					ClientContext.showMsgBox(ChatForm.this,"Default Group can not rename", "tip", JOptionPane.ERROR_MESSAGE);
+//					node.setUserObject(new DefaultNode());
+//				}
+//				
+//			}
+			
+		}
+
+		@Override
+		public void treeNodesInserted(TreeModelEvent e) {
+			
+			
+		}
+
+		@Override
+		public void treeNodesRemoved(TreeModelEvent e) {
+//			DefaultMutableTreeNode node=(DefaultMutableTreeNode)e.getTreePath().getLastPathComponent();
+//			if(node.getLevel()==1&&node.getChildCount()==0){
+//				model.insertNodeInto(new DefaultMutableTreeNode(new EmptyNode()),
+//						node, 0);
+//				model.reload();
+//			}
+//			int index=e.getChildIndices()[0];
+//			if(node.getChildCount()>0){
+//				node=(DefaultMutableTreeNode)node.getChildAt(index);
+//				if(node.getLevel()==1&&node.toString().equals(DefaultNode._default)){
+//					ClientContext.showMsgBox(ChatForm.this,"Default Group can not remove", "tip", JOptionPane.ERROR_MESSAGE);
+//					return;
+//				}
+//			}
+		}
+
+		@Override
+		public void treeStructureChanged(TreeModelEvent e) {
+			// TODO Auto-generated method stub
+			
+		}
+		
+	}
 	
 	
 	

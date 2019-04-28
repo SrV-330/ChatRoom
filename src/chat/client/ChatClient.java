@@ -49,7 +49,7 @@ public class ChatClient {
 			synchronized (client) {
 				if(connecting) return;
 				System.out.println("connecting...");
-				socket=new Socket("127.0.0.1",8088);
+				socket=new Socket("127.0.0.1",9099);
 				out=socket.getOutputStream();
 				in=socket.getInputStream();
 				oos=new ObjectOutputStream(out);
@@ -97,7 +97,7 @@ public class ChatClient {
 //			cmd.setCmd(Command.MOVE_TO_GROUP);
 //			UserGroupInfo cmd=new UserGroupInfo("A","Friends");
 //			cmd.setCmd(Command.REMOVE_GROUP);	
-//			
+			if(!connecting) return;
 			if(start) return;
 			Thread receive=new Thread(){
 				@Override
@@ -106,7 +106,7 @@ public class ChatClient {
 						
 						Command cmd=null;
 						while(true){
-							if(!connecting) return;
+							
 							if(cmdQueue.isEmpty()) continue;
 							cmd=cmdQueue.poll();
 							oos.writeObject(cmd);
@@ -150,7 +150,7 @@ public class ChatClient {
 							}else{
 								cmdRespQueue.offer(cmd);
 								
-								//TODO
+								
 								
 								
 							}
@@ -194,7 +194,7 @@ public class ChatClient {
 						while(true){
 							if(msgQueue.isEmpty()) continue;
 							Command cmd=msgQueue.poll();
-							//TODO
+							
 							
 							
 								

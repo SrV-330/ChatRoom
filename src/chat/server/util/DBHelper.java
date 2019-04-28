@@ -63,7 +63,7 @@ public class DBHelper {
 		final int size=32*3;
 		final int nameOffset=0;
 		final int friendOffset=32*2;
-		try(RandomAccessFile raf=new RandomAccessFile("userfrined.dat","rw")){
+		try(RandomAccessFile raf=new RandomAccessFile("userfriend.dat","rw")){
 			
 			final FriendInfo f=new FriendInfo();
 			moveCursorByKeys(raf, 
@@ -79,11 +79,11 @@ public class DBHelper {
 						@Override
 						public void execute(RandomAccessFile raf, String[] keys, int size, Integer[] keyoffsets,int mod) throws IOException {
 							byte[] b=new byte[32];
-							raf.write(b);
+							raf.read(b);
 							f.setUserName(new String(b,"utf-8").trim());
-							raf.write(b);
+							raf.read(b);
 							f.setGroupName(new String(b,"utf-8").trim());
-							raf.write(b);
+							raf.read(b);
 							f.setFriendName(new String(b,"utf-8").trim());
 							raf.seek(raf.getFilePointer()-32*3);
 							
@@ -107,27 +107,29 @@ public class DBHelper {
 		try(RandomAccessFile raf=new RandomAccessFile("usergroup.dat","rw")){
 			final int size=32*2;
 			final int offset=0;
-			final UserGroupInfo g=new UserGroupInfo();
 			moveCursorByKeys(raf, 
 					new String[]{
 							userName
 							},	
 					size, 
 					new Integer[]{
-							offset,
+							offset
 							},
 					new DBHandler() {
 						
 						@Override
 						public void execute(RandomAccessFile raf, String[] keys, int size, Integer[] keyoffsets,int mod) throws IOException {
 							byte[] b=new byte[32];
+							UserGroupInfo g=new UserGroupInfo();
 							raf.read(b);
 							g.setUserName(new String(b,"utf-8").trim());
 							raf.read(b);
 							g.setGroupName(new String(b,"utf-8").trim());
 							
 							raf.seek(raf.getFilePointer()-32*2);
+							
 							l.add(g);
+							
 							
 						}
 					},DBHandler.GET);
@@ -539,9 +541,9 @@ public class DBHelper {
 		for(long pos=0;pos<raf.length();){
 			
 			if(compareLine(raf, keys, size, keyoffsets)){
-				System.out.println("cmp true");
+				
 				handler.execute(raf, keys, size, keyoffsets,mod);
-				System.out.println("handler execute");
+				
 				if(mod==DBHandler.DELETE) continue;
 				else ;
 				

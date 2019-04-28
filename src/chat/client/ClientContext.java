@@ -3,10 +3,14 @@ package chat.client;
 import java.util.Stack;
 
 import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 import javax.swing.UIManager;
 
 import org.jb2011.lnf.beautyeye.BeautyEyeLNFHelper;
 
+import java.awt.Component;
+
+import chat.client.form.ChatForm;
 import chat.server.entity.FriendGroupInfo;
 import chat.server.entity.UserInfo;
 
@@ -27,7 +31,12 @@ public class ClientContext {
 		}
 	}
 	
+	public static final void showMsgBox(Component p,String text,String title,int type){
+		JOptionPane.showMessageDialog(p,text,title, type);
+	}
+	
 	private Stack<JFrame> forms=new Stack<>();
+	private ChatForm chatForm;
 	private UserInfo user;
 	private FriendGroupInfo friendGroupInfo;
 	
@@ -39,6 +48,7 @@ public class ClientContext {
 
 	public void setFriendGroupInfo(FriendGroupInfo friendGroupInfo) {
 		this.friendGroupInfo = friendGroupInfo;
+		System.out.println(friendGroupInfo);
 	}
 
 	public UserInfo getUser() {
@@ -56,6 +66,9 @@ public class ClientContext {
 	
 	public JFrame formsPop(){
 		if(forms.isEmpty()) return null;
+		if(forms.peek() instanceof ChatForm){
+			this.chatForm=null;
+		}
 		return forms.pop();
 	}
 	public JFrame formsPeek(){
@@ -63,6 +76,9 @@ public class ClientContext {
 		return forms.peek();
 	}
 	public JFrame formsPush(JFrame item){
+		if(item instanceof ChatForm){
+			this.chatForm=(ChatForm)item;
+		}
 		return forms.push(item);
 	}
 	private ChatClient client;
@@ -79,6 +95,19 @@ public class ClientContext {
 	public boolean isConnecting(){
 		return client.isConnecting();
 		
+	}
+	public boolean isStart(){
+		
+		
+		return client.isStart();
+		
+	}
+	public ChatForm getChatForm(){
+		return this.chatForm;
+	}
+
+	public void setChatForm(ChatForm chatForm) {
+		this.chatForm = chatForm;
 	}
 	
 
