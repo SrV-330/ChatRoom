@@ -1,6 +1,8 @@
 package chat.client.form;
 
 import java.awt.Component;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
@@ -9,14 +11,22 @@ import java.util.List;
 
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
+import javax.swing.JScrollPane;
 import javax.swing.JTree;
+import javax.swing.event.CellEditorListener;
+import javax.swing.event.ChangeEvent;
 import javax.swing.event.TreeModelEvent;
 import javax.swing.event.TreeModelListener;
+import javax.swing.event.TreeSelectionEvent;
+import javax.swing.event.TreeSelectionListener;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.TreePath;
 
 import chat.client.ClientContext;
 import chat.server.entity.FriendGroupInfo;
@@ -33,6 +43,7 @@ public class ChatForm extends EmptyForm{
 	private DefaultTreeModel model; 
 	private JButton btn_new_group;
 	private JButton btn_add_friend;
+	private JPopupMenu menu;
 	
 	public static  ChatForm getInstance(ClientContext context){
 		if(chatForm==null){
@@ -113,48 +124,42 @@ public class ChatForm extends EmptyForm{
 		
 		DefaultMutableTreeNode root=new DefaultMutableTreeNode(new RootNode());
 		this.root=root;
+		tree=new JTree();
+		
 		
 		inflactTree();
 		
 		CustomerRenderer render=new CustomerRenderer();
-		tree=new JTree(model);
+		tree.setModel(model);
 		tree.setCellRenderer(render);
 		tree.setSize(350,700);
 		tree.setLocation(0, 0);
 		tree.setShowsRootHandles(true);
 		tree.setRootVisible(false);
-		//tree.setEditable(true);
 		
 		
+		addMenu();
 		
+		JScrollPane jsp=new JScrollPane();
+		jsp.setLayout(null);
+		jsp.setSize(350,700);
+		jsp.setLocation(0, 0);
+		jsp.add(tree);
 		
 		
 		JPanel jp_content=getContent();
 		
-		jp_content.add(tree);
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
+		jp_content.add(jsp);
 		
 	}
 	private void inflactTree(){
 		model=new DefaultTreeModel(root);
-		model.addTreeModelListener(new TreeModelAdapter());
 		FriendGroupInfo friendGroupInfo=getContext().getFriendGroupInfo();
 		for(UserGroupInfo g:friendGroupInfo.getGroups()){
-				addGroup(g);
+			addGroup(g);
 		}
 		for(FriendInfo f:friendGroupInfo.getFriends()){
 			addFriend(f);
-			
 		}
 	}
 	public void addGroup(UserGroupInfo group){
@@ -163,6 +168,7 @@ public class ChatForm extends EmptyForm{
 		
 		if(node.toString().equals(DefaultNode._default)){
 			_default=node;
+			
 		}
 		
 		model.insertNodeInto(node, root, 0);
@@ -184,7 +190,7 @@ public class ChatForm extends EmptyForm{
 			if(childNode.getLevel()==1&&s.equals(friend.getGroupName())){
 				DefaultMutableTreeNode node=
 						new DefaultMutableTreeNode(friend.getFriendName());
-				DefaultMutableTreeNode firstNode=childNode.getFirstLeaf();
+//				DefaultMutableTreeNode firstNode=childNode.getFirstLeaf();
 //				if(firstNode.getUserObject().toString().equals(EmptyNode.empty)){
 //					
 //					model.removeNodeFromParent(firstNode);
@@ -195,6 +201,96 @@ public class ChatForm extends EmptyForm{
 			}
 		}
 		model.reload();
+	}
+	
+	
+	private void addMenu(){
+		JPopupMenu menu=new JPopupMenu();
+		this.menu=menu;
+		addItem(menu,"remove",new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				DefaultMutableTreeNode selNode=(DefaultMutableTreeNode)tree.getSelectionPath().getLastPathComponent();
+				if(selNode.toString().equals(DefaultNode._default)){
+					ClientContext.showMsgBox(tree, "Default Group can not remove", "tip", JOptionPane.ERROR_MESSAGE);
+					return;
+				}
+				
+				
+				//TODO
+				
+				model.removeNodeFromParent(selNode);
+				model.reload();
+				
+			}
+		});
+		
+		addItem(menu, "rename", new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				DefaultMutableTreeNode selNode=(DefaultMutableTreeNode)tree.getSelectionPath().getLastPathComponent();
+				if(selNode.toString().equals(DefaultNode._default)){
+					ClientContext.showMsgBox(tree, "Default Group can not rename", "tip", JOptionPane.ERROR_MESSAGE);
+					return;
+				}
+				
+				
+				//TODO
+				
+				
+				model.reload();
+				
+			}
+		});
+		
+		
+		tree.addTreeSelectionListener(new TreeSelectionListener() {
+			
+			@Override
+			public void valueChanged(TreeSelectionEvent e) {
+				DefaultMutableTreeNode selNode=
+						(DefaultMutableTreeNode)tree.getLastSelectedPathComponent();
+				if(selNode==null) return;
+				System.out.println("SelectNode: "+selNode);
+				
+				if(selNode.toString().equals(DefaultNode._default)){
+					ChatForm.this.menu.getComponent(0).setEnabled(false);
+					ChatForm.this.menu.getComponent(1).setEnabled(false);
+				}else{
+					ChatForm.this.menu.getComponent(0).setEnabled(true);
+					ChatForm.this.menu.getComponent(1).setEnabled(true);
+				}
+				
+			}
+		});
+		
+		tree.addMouseListener(new MouseAdapter() {
+
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				
+				super.mouseClicked(e);
+				
+				int x=e.getX();
+				int y=e.getY();
+				if(e.getButton()==MouseEvent.BUTTON3){
+					TreePath path=tree.getPathForLocation(x, y);
+					tree.setSelectionPath(path);
+					menu.show(tree, x, y);
+				}
+			}
+			
+			
+			
+		});
+		
+	}
+	private void addItem(JPopupMenu menu,String itemName,ActionListener listener){
+		JMenuItem item=new JMenuItem(itemName);
+		menu.add(item);
+		item.addActionListener(listener);
 	}
 	class  CustomerRenderer extends DefaultTreeCellRenderer{
 
@@ -265,67 +361,14 @@ public class ChatForm extends EmptyForm{
 			return _default;
 		}
 	}
-	class TreeModelAdapter implements TreeModelListener{
+	
+	
 
-		@Override
-		public void treeNodesChanged(TreeModelEvent e) {
-//			DefaultMutableTreeNode node=(DefaultMutableTreeNode)e.getTreePath().getLastPathComponent();
-//			System.out.println(node.getLevel()+":"+node.toString());
-//			
-//			int index=e.getChildIndices()[0];
-//			node=(DefaultMutableTreeNode)node.getChildAt(index);
-//			System.out.println(node.toString());
-//			if(node.getLevel()==1&&node.toString().equals(DefaultNode._default)){
-//				
-//				if(!node.toString().equals(DefaultNode._default)){
-//					ClientContext.showMsgBox(ChatForm.this,"Default Group can not rename", "tip", JOptionPane.ERROR_MESSAGE);
-//					node.setUserObject(new DefaultNode());
-//				}
-//				
-//			}
-			
-		}
-
-		@Override
-		public void treeNodesInserted(TreeModelEvent e) {
-			
-			
-		}
-
-		@Override
-		public void treeNodesRemoved(TreeModelEvent e) {
-//			DefaultMutableTreeNode node=(DefaultMutableTreeNode)e.getTreePath().getLastPathComponent();
-//			if(node.getLevel()==1&&node.getChildCount()==0){
-//				model.insertNodeInto(new DefaultMutableTreeNode(new EmptyNode()),
-//						node, 0);
-//				model.reload();
-//			}
-//			int index=e.getChildIndices()[0];
-//			if(node.getChildCount()>0){
-//				node=(DefaultMutableTreeNode)node.getChildAt(index);
-//				if(node.getLevel()==1&&node.toString().equals(DefaultNode._default)){
-//					ClientContext.showMsgBox(ChatForm.this,"Default Group can not remove", "tip", JOptionPane.ERROR_MESSAGE);
-//					return;
-//				}
-//			}
-		}
-
-		@Override
-		public void treeStructureChanged(TreeModelEvent e) {
-			// TODO Auto-generated method stub
-			
-		}
-		
-	}
-	
-	
-	
-	
-	
 	public static void main(String[] args) {
 		FriendGroupInfo fg=new FriendGroupInfo();
 		List<UserGroupInfo> l=new ArrayList<>();
 		l.add(new UserGroupInfo("A", "Friends"));
+		l.add(new UserGroupInfo("A","Default"));
 		List<FriendInfo> l1=new ArrayList<>();
 		l1.add(new FriendInfo("A","B","Friends"));
 		fg.setGroups(l);
