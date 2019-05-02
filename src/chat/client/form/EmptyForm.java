@@ -1,6 +1,5 @@
 package chat.client.form;
 
-import java.awt.HeadlessException;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
@@ -19,6 +18,7 @@ public class EmptyForm extends JFrame {
 	private JPanel jp_content;
 	public EmptyForm(){
 		super();
+		this.setTitle("title");
 		this.setSize(430,250);
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		this.setLocationRelativeTo(null);
@@ -34,7 +34,7 @@ public class EmptyForm extends JFrame {
 		this.add(jp_content);
 		
 	}
-	public EmptyForm(ClientContext context) throws HeadlessException {
+	public EmptyForm(ClientContext context){
 		this();
 		this.context = context;
 	}
@@ -64,6 +64,7 @@ public class EmptyForm extends JFrame {
 				if(getContext().formsPeek()!=null)
 					getContext().formsPeek().setVisible(true);
 				EmptyForm.this.dispose();
+				
 			}
 			
 		});

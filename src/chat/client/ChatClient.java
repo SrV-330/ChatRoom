@@ -6,12 +6,17 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import javax.swing.JOptionPane;
 
+import chat.client.form.SingleForm;
 import chat.server.entity.Command;
+import chat.server.entity.SendMessageInfo;
 
 public class ChatClient {
 
@@ -20,6 +25,11 @@ public class ChatClient {
 	private static final Queue<Command> msgQueue=new LinkedBlockingQueue<>();
 	
 	private static ChatClient client;
+	private ClientContext context;
+	
+	private Thread receive;
+	private Thread read;
+	private Thread readMsg;
 	
 	private Socket socket;
 	private OutputStream out;
@@ -99,7 +109,7 @@ public class ChatClient {
 //			cmd.setCmd(Command.REMOVE_GROUP);	
 			if(!connecting) return;
 			if(start) return;
-			Thread receive=new Thread(){
+			receive=new Thread(){
 				@Override
 				public void run(){
 					try{
@@ -107,7 +117,14 @@ public class ChatClient {
 						Command cmd=null;
 						while(true){
 							
-							if(cmdQueue.isEmpty()) continue;
+							if(cmdQueue.isEmpty()) {
+								synchronized (cmdQueue) {
+									if(cmdQueue.isEmpty()){
+										cmdQueue.wait();
+									}
+								}
+								
+							}
 							cmd=cmdQueue.poll();
 							oos.writeObject(cmd);
 						}
@@ -136,7 +153,7 @@ public class ChatClient {
 			receive.start();
 			
 			
-			Thread read=new Thread(){
+			read=new Thread(){
 				@Override
 				public void run(){
 					try {
@@ -145,6 +162,9 @@ public class ChatClient {
 							Command cmd=(Command) ois.readObject();
 							if(cmd.getCmd()==Command.RECEIVE_MSG){
 								msgQueue.offer(cmd);
+								synchronized (msgQueue) {
+									msgQueue.notify();
+								}
 								
 								
 							}else{
@@ -187,18 +207,30 @@ public class ChatClient {
 			};
 			read.setDaemon(true);
 			read.start();
-			Thread readMsg=new Thread(){
+			readMsg=new Thread(){
 				@Override
 				public void run(){
 					try {
 						while(true){
-							if(msgQueue.isEmpty()) continue;
-							Command cmd=msgQueue.poll();
-							
-							
-							
+							if(msgQueue.isEmpty()) {
+								synchronized (msgQueue) {
+									if(msgQueue.isEmpty()){
+										msgQueue.wait();
+									}
+								}
 								
-							System.out.println(cmd);
+							}
+							Command cmd=msgQueue.peek();
+							
+							SendMessageInfo msg=(SendMessageInfo)cmd;
+							
+							SingleForm form=context.getSingleForm(msg.getSendUserName());
+							if(form!=null&&form.isVisible()){
+								msgQueue.poll();
+								form.receive(msg);
+							}
+								
+							
 								
 							
 						}
@@ -238,6 +270,10 @@ public class ChatClient {
 	}
 	
 	public boolean addCommand(Command cmd){
+		synchronized (cmdQueue) {
+			cmdQueue.notify();
+		}
+		
 		return cmdQueue.offer(cmd);
 	}
 	
@@ -249,6 +285,19 @@ public class ChatClient {
 		return cmd;
 		
 	}
+	public synchronized List<Command> getMessages(String key){
+		Iterator<Command> iterator=msgQueue.iterator();
+		List<Command> cmds=new ArrayList<>();
+		while(iterator.hasNext()){
+			SendMessageInfo cmd=(SendMessageInfo)iterator.next();
+			System.out.println("SendMessageInfo: "+cmd);
+			if(key.equals(cmd.getReceiveUserName())){
+				cmds.add(cmd);
+				iterator.remove();
+			}
+		}
+		return cmds.size()==0?null:cmds;
+	}
 	
 	public boolean isConnecting() {
 		return connecting;
@@ -256,6 +305,13 @@ public class ChatClient {
 	
 	public boolean isStart() {
 		return start;
+	}
+	
+	public ClientContext getContext() {
+		return context;
+	}
+	public void setContext(ClientContext context) {
+		this.context = context;
 	}
 	public static void main(String[] args) throws Exception {
 		ChatClient client=ChatClient.getInstance();

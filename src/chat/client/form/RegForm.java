@@ -34,7 +34,7 @@ public class RegForm extends AbstractForm {
 	}
 	private RegForm(ClientContext context){
 		super(context);
-		
+		this.setTitle("Register");
 	}
 	
 

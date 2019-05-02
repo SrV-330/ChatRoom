@@ -48,7 +48,7 @@ public class AddFriendForm extends SearchForm {
 
 	@Override
 	public void addOkText(JButton btn) {
-		btn.setText("Search");
+		btn.setText("Add Friend");
 	}
 
 	@Override

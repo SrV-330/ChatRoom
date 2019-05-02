@@ -4,8 +4,9 @@ import java.io.Serializable;
 
 import chat.server.util.json.annotation.JsonBody;
 
+@SuppressWarnings("serial")
 @JsonBody
-public class SendMessageInfo extends Command implements Serializable{
+public class SendMessageInfo extends Command implements Serializable,Cloneable{
 	
 	private String sendUserName;
 	private String receiveUserName;
@@ -49,6 +50,15 @@ public class SendMessageInfo extends Command implements Serializable{
 	public String toString() {
 		return "SendMessageInfo [sendUserName=" + sendUserName + ", receiveUserName=" + receiveUserName + ", message="
 				+ message + "]";
+	}
+	
+	public SendMessageInfo copy(){
+		try {
+			return (SendMessageInfo) this.clone();
+		} catch (CloneNotSupportedException e) {
+			return null;
+			
+		}
 	}
 	@Override
 	public int hashCode() {

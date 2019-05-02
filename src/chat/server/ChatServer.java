@@ -28,6 +28,7 @@ public class ChatServer {
 	
 	private List<Socket> sockets=new ArrayList<>();
 	private HashMap<UserInfo,Socket> users=new HashMap<>();
+	private HashMap<UserInfo,ObjectOutputStream> writers=new HashMap<>();
 	private ServerSocket server;
 	private ThreadPoolExecutor executor=new ThreadPoolExecutor(16, 64, 5, 
 			TimeUnit.SECONDS, new LinkedBlockingQueue<>(1024));
@@ -113,7 +114,9 @@ public class ChatServer {
 				this.out=this.socket.getOutputStream();
 				ois=new ObjectInputStream(in);
 				oos=new ObjectOutputStream(out);
+				
 				synchronized (sockets) {
+					
 					sockets.add(socket);
 				}
 				System.out.println(sockets);
@@ -131,10 +134,10 @@ public class ChatServer {
 				while(true){
 					System.out.println("Command: ");
 					Command cmd=(Command)ois.readObject();
-					System.out.println(cmd);
+					//System.out.println(cmd);
 					if(cmd==null) return;
 					
-					
+					if(cmd.getCmd()==null) return;
 					switch (cmd.getCmd()) {
 					case Command.LOGIN:
 						doLogin(cmd);
@@ -179,16 +182,21 @@ public class ChatServer {
 			}finally{
 				
 				try {
+					
+					synchronized (sockets) {
+						synchronized (users) {
+							synchronized (writers) {
+								sockets.remove(socket);
+								users.remove(user);
+								writers.remove(oos);
+							}
+							
+						}
+					}
 					if(ois!=null)
 						ois.close();
 					if(oos!=null)
 						oos.close();
-					synchronized (sockets) {
-						synchronized (users) {
-							sockets.remove(socket);
-							users.remove(user);
-						}
-					}
 					if(socket!=null)
 						socket.close();
 				} catch (IOException e) {
@@ -279,6 +287,11 @@ public class ChatServer {
 					oos.writeObject(c);
 					return;
 				}
+				if(DBHelper.getFriend(f)==null){
+					c.setCmd(Command.NOT_FRIEND);
+					oos.writeObject(c);
+					return;
+				}
 				if(DBHelper.deleteFriend(f)){
 					String t=f.getFriendName();
 					f.setFriendName(f.getUserName());
@@ -346,7 +359,7 @@ public class ChatServer {
 				UserInfo sendUser=DBHelper.getUser(msg.getSendUserName());
 				UserInfo receiveUser=DBHelper.getUser(msg.getReceiveUserName());
 				if(DBHelper.getFriend(new FriendInfo(sendUser.getUserName(),
-						null,receiveUser.getUserName()))==null){
+						receiveUser.getUserName(),null))==null){
 					c.setCmd(Command.NOT_FRIEND);
 					oos.writeObject(c);
 					return;
@@ -354,10 +367,15 @@ public class ChatServer {
 				synchronized(users){
 					if(users.containsKey(sendUser)&&users.containsKey(receiveUser)){
 						Socket socket=users.get(receiveUser);
+						
+						
 						ObjectOutputStream rcv=
-								new ObjectOutputStream(socket.getOutputStream());
-						msg.setCmd(Command.RECEIVE_MSG);
-						rcv.writeObject(msg);
+								writers.get(receiveUser);
+						
+						SendMessageInfo msg1=msg.copy();
+						msg1.setCmd(Command.RECEIVE_MSG);
+						
+						rcv.writeObject(msg1);
 						c.setCmd(Command.SUCCESS);
 						oos.writeObject(c);
 						return;
@@ -551,8 +569,13 @@ public class ChatServer {
 					FriendGroupInfo fg=new FriendGroupInfo(Command.SUCCESS,l1,l);
 					
 					synchronized (users) {
-						users.put(userInfo,socket);
-						user=userInfo;
+						synchronized (writers) {
+							users.put(userInfo,socket);
+							user=userInfo;
+							writers.put(userInfo, oos);
+						}
+						
+						
 					}
 					System.out.println(users);
 					System.out.println(fg);

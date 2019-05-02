@@ -13,6 +13,7 @@ import org.jb2011.lnf.beautyeye.ch3_button.BEButtonUI;
 
 import chat.client.ClientContext;
 
+@SuppressWarnings("serial")
 public class SearchForm extends EmptyForm{
 
 

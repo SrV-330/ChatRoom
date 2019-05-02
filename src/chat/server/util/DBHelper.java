@@ -63,6 +63,7 @@ public class DBHelper {
 		final int size=32*3;
 		final int nameOffset=0;
 		final int friendOffset=32*2;
+		System.out.println(friendInfo);
 		try(RandomAccessFile raf=new RandomAccessFile("userfriend.dat","rw")){
 			
 			final FriendInfo f=new FriendInfo();
@@ -90,7 +91,10 @@ public class DBHelper {
 							
 						}
 					},DBHandler.GET);
+			
+			System.out.println(f);
 			if(f.getGroupName()==null||f.getGroupName().equals("")){
+				
 				return null;
 			}
 			return f;

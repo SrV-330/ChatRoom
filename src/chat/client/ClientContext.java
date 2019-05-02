@@ -1,5 +1,6 @@
 package chat.client;
 
+import java.util.HashMap;
 import java.util.Stack;
 
 import javax.swing.JFrame;
@@ -11,6 +12,7 @@ import org.jb2011.lnf.beautyeye.BeautyEyeLNFHelper;
 import java.awt.Component;
 
 import chat.client.form.ChatForm;
+import chat.client.form.SingleForm;
 import chat.server.entity.FriendGroupInfo;
 import chat.server.entity.UserInfo;
 
@@ -36,6 +38,7 @@ public class ClientContext {
 	}
 	
 	private Stack<JFrame> forms=new Stack<>();
+	private HashMap<String, SingleForm> singleForms=new HashMap<>();
 	private ChatForm chatForm;
 	private UserInfo user;
 	private FriendGroupInfo friendGroupInfo;
@@ -51,6 +54,15 @@ public class ClientContext {
 		System.out.println(friendGroupInfo);
 	}
 
+	public SingleForm getSingleForm(String key){
+		return singleForms.get(key);
+	}
+	public SingleForm putSingleForm(String key,SingleForm form){
+		return singleForms.put(key, form);
+	}
+	public SingleForm removeSingleForm(String key){
+		return singleForms.remove(key);
+	}
 	public UserInfo getUser() {
 		return user;
 	}
@@ -86,6 +98,7 @@ public class ClientContext {
 	
 	{
 		client=ChatClient.getInstance();
+		client.setContext(this);
 	}
 	public ChatClient getClient(){
 		

@@ -38,7 +38,7 @@ public class LoginForm extends AbstractForm {
 	}
 	private LoginForm(ClientContext context){
 		super(context);
-		
+		this.setTitle("Login");
 	}
 
 	@Override

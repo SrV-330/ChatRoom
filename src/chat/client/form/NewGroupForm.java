@@ -44,7 +44,7 @@ public class NewGroupForm extends SearchForm {
 	}
 	@Override
 	public void addOkText(JButton btn) {
-		btn.setText("Search");
+		btn.setText("New Group");
 	}
 	@Override
 	public void addOKListener(JButton btn) {

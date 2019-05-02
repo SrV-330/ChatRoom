@@ -29,7 +29,12 @@ public class FriendInfo extends Command implements Serializable{
 		this.friendName = friendName;
 		this.groupName = groupName;
 	}
-
+	public FriendInfo(Integer cmd, String userName, String friendName) {
+		super(cmd);
+		this.userName = userName;
+		this.friendName = friendName;
+		
+	}
 	public FriendInfo(Integer cmd, String userName, String friendName, String groupName) {
 		super(cmd);
 		this.userName = userName;

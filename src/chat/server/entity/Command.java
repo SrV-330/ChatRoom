@@ -5,6 +5,7 @@ import java.io.Serializable;
 import chat.server.util.json.annotation.JsonBody;
 import chat.server.util.json.annotation.JsonGetter;
 import chat.server.util.json.annotation.JsonSetter;
+@SuppressWarnings("serial")
 @JsonBody
 public class Command implements Serializable{
 	public static final int NAC=0;
