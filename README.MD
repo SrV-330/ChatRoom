@@ -1,7 +1,5 @@
 # 聊天室
 
 使用了
-> https://github.com/JackJiang2011/beautyeye
-
-框架美化页面
+[https://github.com/JackJiang2011/beautyeye](https://github.com/JackJiang2011/beautyeye) 框架美化页面
 
